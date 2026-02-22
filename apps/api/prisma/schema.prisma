@@ -196,6 +196,26 @@ enum MediaProcessingStatus {
   @@map("media_processing_status")
 }
 
+enum ConnectAccountStatus {
+  not_connected
+  onboarding
+  active
+  restricted
+  disabled
+
+  @@map("connect_account_status")
+}
+
+enum TransactionStatus {
+  pending
+  processing
+  completed
+  failed
+  refunded
+
+  @@map("transaction_status")
+}
+
 // ─── Models ───────────────────────────────────────────────────
 
 model User {
@@ -207,8 +227,10 @@ model User {
   phone             String?    @unique @db.VarChar(20)
   phoneVerified     Boolean    @default(false) @map("phone_verified")
   bio               String?
-  identityVerified  Boolean    @default(false) @map("identity_verified")
-  stripeIdentityId  String?    @map("stripe_identity_id")
+  identityVerified       Boolean              @default(false) @map("identity_verified")
+  stripeIdentityId       String?              @map("stripe_identity_id")
+  stripeConnectAccountId String?              @map("stripe_connect_account_id")
+  connectAccountStatus   ConnectAccountStatus @default(not_connected) @map("connect_account_status")
   // PostGIS geography column managed via raw migration; these are Prisma-accessible copies
   locationLat       Float?     @map("location_lat")
   locationLng       Float?     @map("location_lng")
@@ -247,6 +269,8 @@ model User {
   subscription                SellerSubscription?
   exchangeTokensAsSeller      ExchangeToken[]      @relation("ExchangeTokenSeller")
   exchangeTokensAsBuyer       ExchangeToken[]      @relation("ExchangeTokenBuyer")
+  transactionsAsBuyer         Transaction[]        @relation("BuyerTransactions")
+  transactionsAsSeller        Transaction[]        @relation("SellerTransactions")
 
   @@index([status])
   @@index([email])
@@ -373,6 +397,7 @@ model Listing {
   promotionPurchases PromotionPurchase[]
   offers             Offer[]
   exchangeTokens     ExchangeToken[]
+  transactions       Transaction[]
 
   @@index([userId, status])
   @@index([status, categoryId])
@@ -760,4 +785,30 @@ model ExchangeToken {
   @@index([sellerId])
   @@index([buyerId])
   @@map("exchange_tokens")
+}
+
+model Transaction {
+  id                    String            @id @default(cuid())
+  listingId             String            @map("listing_id")
+  buyerId               String            @map("buyer_id")
+  sellerId              String            @map("seller_id")
+  amountCents           Int               @map("amount_cents")
+  platformFeeCents      Int               @map("platform_fee_cents")
+  sellerPayoutCents     Int               @map("seller_payout_cents")
+  currency              String            @default("usd") @db.VarChar(3)
+  status                TransactionStatus @default(pending)
+  stripePaymentIntentId String?           @unique @map("stripe_payment_intent_id")
+  stripeTransferId      String?           @map("stripe_transfer_id")
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime          @updatedAt @map("updated_at") @db.Timestamptz()
+
+  listing Listing @relation(fields: [listingId], references: [id])
+  buyer   User    @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  seller  User    @relation("SellerTransactions", fields: [sellerId], references: [id])
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([listingId])
+  @@index([status])
+  @@map("transactions")
 }

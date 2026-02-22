@@ -25,12 +25,90 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../common/guards/auth.guard';
 import { PaymentsService } from './payments.service';
 import { PurchasePromotionDto } from './dto/purchase-promotion.dto';
+import { InitiatePurchaseDto } from './dto/initiate-purchase.dto';
 import { PaginationDto } from '../../common/pipes/validation.pipe';
 
 @ApiTags('Payments')
 @Controller()
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  // ─── Stripe Connect ───────────────────────────────────────────
+
+  @Post('connect/onboard')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create or retrieve a Stripe Connect onboarding link' })
+  @ApiResponse({ status: 200, description: 'Onboarding URL returned' })
+  async onboardConnect(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ data: { url: string } }> {
+    const result = await this.paymentsService.onboardConnectAccount(user.userId);
+    return { data: result };
+  }
+
+  @Get('connect/status')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get the current Stripe Connect account status' })
+  @ApiResponse({ status: 200, description: 'Connect status returned' })
+  async getConnectStatus(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ data: Record<string, unknown> }> {
+    const result = await this.paymentsService.getConnectStatus(user.userId);
+    return { data: result as unknown as Record<string, unknown> };
+  }
+
+  @Post('connect/dashboard-link')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Generate a Stripe Express dashboard login link' })
+  @ApiResponse({ status: 200, description: 'Dashboard URL returned' })
+  @ApiResponse({ status: 400, description: 'Account not fully active' })
+  async getDashboardLink(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ data: { url: string } }> {
+    const result = await this.paymentsService.generateDashboardLink(user.userId);
+    return { data: result };
+  }
+
+  // ─── In-App Purchase ──────────────────────────────────────────
+
+  @Post('purchase')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a PaymentIntent to purchase a listing' })
+  @ApiResponse({ status: 201, description: 'Payment intent client secret returned' })
+  @ApiResponse({ status: 400, description: 'Listing not available or seller not set up' })
+  async initiatePurchase(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: InitiatePurchaseDto,
+  ): Promise<{ data: { clientSecret: string; publishableKey: string; transactionId: string } }> {
+    const result = await this.paymentsService.createPurchaseIntent(user.userId, dto);
+    return { data: result };
+  }
+
+  @Get('transactions')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get transaction history (as buyer or seller)' })
+  @ApiResponse({ status: 200, description: 'Transactions returned' })
+  async getTransactions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: PaginationDto,
+  ): Promise<{
+    data: Record<string, unknown>[];
+    pagination: { total: number; page: number; limit: number };
+  }> {
+    const { transactions, total } = await this.paymentsService.getTransactions(
+      user.userId,
+      query,
+    );
+    return {
+      data: transactions,
+      pagination: { total, page: query.page ?? 1, limit: query.limit ?? 20 },
+    };
+  }
+
+  // ─── Promotions ───────────────────────────────────────────────
 
   @Get('promotions/plans')
   @Public()

@@ -574,5 +574,62 @@ export const notifications = {
   },
 };
 
-const api = { auth, users, listings, search, conversations, ratings, promotions, reports, admin, offers, savedSearches, subscriptions, identity, notifications };
+// ----------------------------------------------------------------
+// Stripe Connect
+// ----------------------------------------------------------------
+
+export interface ConnectStatus {
+  status: 'not_connected' | 'onboarding' | 'active' | 'restricted' | 'disabled';
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+  requirements: string[];
+}
+
+export const connect = {
+  getStatus(opts?: RequestOptions): Promise<ApiResponse<ConnectStatus>> {
+    return request('GET', '/payments/connect/status', undefined, opts);
+  },
+  onboard(opts?: RequestOptions): Promise<ApiResponse<{ url: string }>> {
+    return request('POST', '/payments/connect/onboard', undefined, opts);
+  },
+  getDashboardLink(opts?: RequestOptions): Promise<ApiResponse<{ url: string }>> {
+    return request('POST', '/payments/connect/dashboard-link', undefined, opts);
+  },
+};
+
+// ----------------------------------------------------------------
+// Transactions
+// ----------------------------------------------------------------
+
+export interface TransactionItem {
+  id: string;
+  status: string;
+  amountCents: number;
+  platformFeeCents: number;
+  sellerPayoutCents: number;
+  currency: string;
+  createdAt: string;
+  listing: { id: string; title: string; slug: string };
+  buyer: { id: string; displayName: string; avatarUrl: string | null };
+  seller: { id: string; displayName: string; avatarUrl: string | null };
+}
+
+export const transactions = {
+  list(
+    params?: { page?: number; limit?: number },
+    opts?: RequestOptions,
+  ): Promise<ApiResponse<{ transactions: TransactionItem[]; total: number }>> {
+    const qs = buildQueryString(params ?? {});
+    return request('GET', `/payments/transactions${qs}`, undefined, opts);
+  },
+  initiate(
+    listingId: string,
+    opts?: RequestOptions,
+  ): Promise<ApiResponse<{ clientSecret: string; publishableKey: string; transactionId: string }>> {
+    return request('POST', '/payments/purchase', { listingId }, opts);
+  },
+};
+
+const api = { auth, users, listings, search, conversations, ratings, promotions, reports, admin, offers, savedSearches, subscriptions, identity, notifications, connect, transactions };
 export default api;
