@@ -1,6 +1,6 @@
 # Project Progress
 
-Last updated: 2026-02-20
+Last updated: 2026-02-22
 
 This document tracks the development status of the Marketplace application across all phases. It serves as the single source of truth for what has been completed, what is in progress, and what remains.
 
@@ -76,7 +76,7 @@ Status legend:
 | Listing CRUD API endpoints | [x] | `GET/POST /listings`, `GET/PATCH/DELETE /listings/:id` |
 | Listing status state machine | [x] | draft → pending_review → active → sold/closed/expired |
 | Media upload (images) | [x] | `POST /listings/:id/media` — S3 upload endpoint; EXIF stripping pipeline scaffolded |
-| Media upload (video) | [ ] | Deferred to Phase 2 |
+| Media upload (video) | [x] | `process-video` BullMQ job — fluent-ffmpeg thumbnail extraction at 00:00:01; uploads to S3; ffmpeg added to Dockerfile |
 | Category-specific field validation | [x] | EAV pattern with `listing_fields` table; DTO validation in place |
 | Listing expiration + renewal | [x] | 30-day expiration via scheduled job; `POST /listings/:id/renew` |
 | Listing creation UI | [x] | `app/(main)/listings/new/page.tsx` — 7-step wizard |
@@ -95,7 +95,7 @@ Status legend:
 | Sort by distance / newest / price | [x] | `sortBy` and `sortOrder` params |
 | Full-text search (title + description) | [x] | PostgreSQL `tsvector` with GIN index |
 | Search results page UI | [x] | `app/(main)/search/page.tsx` — infinite scroll, filter sidebar, list/grid toggle |
-| Map view | [ ] | Stretch goal — deferred |
+| Map view | [x] | Web: `app/(main)/search/MapView.tsx` — Leaflet/OSM with listing pins; Mobile: `components/ListingMapView.tsx` wired into search tab |
 | Pagination (cursor-based) | [x] | `cursor` + `limit` on all collection endpoints |
 
 ### Chat / Messaging Module
@@ -156,19 +156,20 @@ Status legend:
 | Phone verification gate for posting | [x] | `phoneVerified` check before allowing listing creation |
 | Prohibited keyword detection | [x] | Keyword list + fuzzy matching in `RiskScoringService` |
 | Risk scoring per listing | [x] | `apps/api/src/modules/moderation/risk-scoring.service.ts` — 18+ signal evaluators |
-| Image hash for known-bad uploads | [ ] | Perceptual hashing pipeline not yet implemented |
+| Image hash for known-bad uploads | [x] | dHash implemented in `MediaProcessingProcessor` via Sharp (9×8 greyscale); hash stored on `ListingMedia`; `RiskScoringProcessor` queries `BadMediaHash` blocklist |
 | Rate limiting (per-endpoint) | [x] | NestJS ThrottlerModule; custom `ThrottleGuard` with tiered limits |
 
 ### Cross-cutting
 
 | Task | Status | Notes |
 |---|---|---|
+| Unit test suite | [x] | 5 spec files, 40 tests — `media-processing.processor.spec.ts`, `search.service.spec.ts`, `chat.service.spec.ts`, `users.service.spec.ts`, `exchange.service.spec.ts` |
 | Error handling middleware | [x] | Global exception filter with standardized `{ error: { code, message } }` format |
 | Request validation (DTOs) | [x] | `AppValidationPipe` with `whitelist`, `forbidNonWhitelisted`, `transform` |
 | Logging infrastructure | [x] | `AppLogger` — structured JSON in production, colorized dev output; wired into `main.ts` |
 | Health check endpoint | [x] | `GET /health` via `@nestjs/terminus` — checks DB + Redis |
 | Email service integration | [x] | `EmailService` with nodemailer SMTP; 7 templates (welcome, verification, reset, expired, new message, approved, rejected) |
-| Background job processing (BullMQ) | [x] | MediaProcessingProcessor (EXIF strip + resize), NotificationProcessor (email + push stub), RiskScoringProcessor — all wired with queue injection |
+| Background job processing (BullMQ) | [x] | MediaProcessingProcessor (dHash + resize + video thumbnail), NotificationProcessor (real Expo push delivery + stale token cleanup), RiskScoringProcessor — all wired with queue injection |
 
 ---
 
@@ -182,10 +183,12 @@ Status legend:
 | Listing detail screen | [x] | `app/listing/[id].tsx` — image gallery, seller card, sticky CTA bar, share button |
 | Camera-first listing creation | [x] | `app/create/` — 3-step flow: media picker → details → preview + upload |
 | Public user profile screen | [x] | `app/user/[id].tsx` — avatar, stats, 2-col listings grid, FlashList |
-| Push notification integration | [x] | Expo Notifications wired; `registerForPushNotifications` → `POST /users/push-token` |
+| Push notification integration | [x] | Expo Notifications wired; `POST/DELETE /users/me/push-token`; real Expo push delivery via `expo-server-sdk`; chat messages and moderation decisions enqueue push jobs |
 | Location permissions + "near me" | [x] | `hooks/useLocation.ts` + `expo-location`; GPS pre-fills listing creation |
-| Mobile chat UX | [x] | `app/chat/[id].tsx` — Socket.IO real-time, typing indicators, optimistic sends, mark-read |
+| Mobile chat UX | [x] | `app/chat/[id].tsx` — Socket.IO real-time, typing indicators, optimistic sends, mark-read; QR exchange buttons wired (seller: show QR, buyer: scan QR) |
 | Offline support / caching | [x] | MMKV-backed cache (5-min TTL) in `stores/cache-store.ts`; `OfflineBanner` component |
+| QR code exchange handshake | [x] | `ExchangeModule` — seller generates JWT QR token (`POST /conversations/:id/exchange-qr`), buyer confirms by scan (`POST /exchange-tokens/confirm`); `ExchangeQRModal` + `ExchangeScannerModal`; wired into chat header |
+| Web notification bell | [x] | `NotificationBell.tsx` — React Query polling (30s), unread badge, dropdown, mark-all-read; added to `Header.tsx` |
 | App store submission | [ ] | Requires EAS account setup |
 
 ---
@@ -204,7 +207,7 @@ Status legend:
 | Subscription plans for power sellers | [x] | `SubscriptionsModule` — Stripe Checkout + webhook lifecycle; 3 tiers (basic/pro/unlimited); `app/(main)/settings/subscription/page.tsx` |
 | Advanced moderation automation | [~] | `RiskScoringProcessor` auto-holds (≥70) / auto-rejects (≥90); full ML pipeline deferred |
 | In-app checkout + Stripe Connect payouts | [ ] | Deferred — requires Connect onboarding flow |
-| Prisma schema additions | [x] | `PushToken`, `Offer`, `SellerSubscription`, `SavedSearch` models added |
+| Prisma schema additions | [x] | `PushToken`, `Offer`, `SellerSubscription`, `SavedSearch`, `BadMediaHash`, `ExchangeToken` models added; `MediaProcessingStatus` enum + `processingStatus` field on `ListingMedia` |
 
 ---
 
@@ -230,33 +233,20 @@ Status legend:
 
 | Topic | Options | Notes |
 |---|---|---|
-| Maps provider | Google Maps Platform vs. Mapbox | Cost and UX trade-offs to evaluate |
-| Search engine (Phase 2) | Algolia vs. Elasticsearch/OpenSearch | For fast faceted search beyond PostGIS |
-| Image processing pipeline | Sharp (Node.js) vs. AWS Lambda vs. dedicated service | Resize, format conversion, EXIF stripping |
-| Email provider | SendGrid vs. AWS SES vs. Resend | Transactional + marketing emails |
+| Maps provider | Google Maps Platform vs. Mapbox | Currently Leaflet/OSM; upgrade path when richer map features are needed |
+| Search engine | Algolia vs. Elasticsearch/OpenSearch | Currently PostGIS; migration path available when faceted search latency demands it |
+| Email provider | SendGrid vs. AWS SES vs. Resend | Nodemailer stub in place; provider selection needed before launch |
 
 ---
 
 ## Open Questions
 
-1. **Category taxonomy finalization** -- The top-level categories (Automotive, Housing, Real Estate, Jobs/Services, For Sale, Community) are defined. Subcategories and required fields per category need detailed specification.
+1. **Search ranking algorithm** -- How should promoted results interleave with organic results? What weight does distance vs. recency get?
 
-2. **Content moderation policy** -- Prohibited content types, enforcement escalation ladder, and response SLAs need formal documentation.
+2. **Deployment target** -- AWS vs. GCP vs. other cloud provider? Kubernetes vs. simpler deployment (ECS, Cloud Run)? Deploy workflow is stubbed in `.github/workflows/deploy.yml` but not wired to a real target.
 
-3. **Promotion pricing** -- Decided: Bump $2.99/24h, Featured $9.99/7d, Spotlight $19.99/7d. Final review before launch needed.
+3. **Monitoring and observability** -- Which tools for APM, error tracking, and metrics? (Datadog, Sentry, Grafana, etc.) Nothing is instrumented yet.
 
-4. **Map view priority** -- Is the map view a hard requirement for MVP or can it be a fast-follow after launch?
+4. **Legal and compliance** -- Privacy policy, terms of service, CCPA/GDPR considerations for user data and location tracking.
 
-5. **Video upload for MVP** -- Should video upload be included in Phase 1, or deferred to Phase 2?
-
-6. **Search ranking algorithm** -- How should promoted results interleave with organic results? What weight does distance vs. recency get?
-
-7. **Deployment target** -- AWS vs. GCP vs. other cloud provider? Kubernetes vs. simpler deployment (ECS, Cloud Run)?
-
-8. **Monitoring and observability** -- Which tools for APM, error tracking, and metrics? (Datadog, Sentry, Grafana, etc.)
-
-9. **Automated testing strategy** -- Target coverage levels? E2E testing scope for MVP?
-
-10. **Legal and compliance** -- Privacy policy, terms of service, CCPA/GDPR considerations for user data and location tracking.
-
-11. **Docker production images** -- Dockerfiles created for API and web; actual deployment target (ECS, Cloud Run, k8s) still TBD. Deploy workflow is stubbed in `.github/workflows/deploy.yml`.
+5. **Email provider** -- `EmailService` uses nodemailer; a real SMTP provider (SendGrid, AWS SES, Resend) needs to be configured and templates tested end-to-end.
