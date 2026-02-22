@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+.next
+out
+build
+
+# Version control
+.git
+.gitignore
+
+# Environment files (secrets must not be baked into images)
+.env
+.env.local
+.env.*.local
+# Keep .env.example as reference
+!.env.example
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test and coverage
+coverage
+.nyc_output
+
+# Turbo cache
+.turbo
+
+# Docker data volumes
+.docker-data
+
+# Logs
+*.log
+logs
+
+# Documentation (not needed in images)
+docs
+*.md
+!README.md
+
+# CI/CD
+.github
+
+# Mobile app (not containerized)
+apps/mobile
+
+# Misc
+*.tsbuildinfo
+.eslintcache
+.prettierrc

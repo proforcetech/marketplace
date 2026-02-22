@@ -1,0 +1,144 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Wait for CI to pass
+  # ---------------------------------------------------------------------------
+  ci-check:
+    name: CI Status Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Wait for the CI workflow to complete on this commit
+      - name: Wait for CI workflow
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: Build
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+
+  # ---------------------------------------------------------------------------
+  # Build and Push Docker Images
+  # ---------------------------------------------------------------------------
+  build-and-push:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: [ci-check]
+    timeout-minutes: 20
+
+    # TODO: Configure DOCKER_REGISTRY, DOCKER_USERNAME, DOCKER_PASSWORD secrets
+    # and deployment target before enabling this job.
+    if: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # TODO: Configure container registry credentials as repository secrets
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata for API image
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_REGISTRY }}/marketplace-api
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for Web image
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_REGISTRY }}/marketplace-web
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # Deploy to Target Environment
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    timeout-minutes: 15
+
+    # TODO: Enable after configuring deployment target (ECS, Cloud Run, or k8s)
+    if: false
+
+    environment:
+      name: production
+      url: https://marketplace.example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # TODO: Replace with actual deployment steps for your target platform.
+      # Options include:
+      #   - AWS ECS: use aws-actions/amazon-ecs-deploy-task-definition
+      #   - Google Cloud Run: use google-github-actions/deploy-cloudrun
+      #   - Kubernetes: use kubectl set image or helm upgrade
+      - name: Deploy API
+        run: |
+          echo "Deploying API image: ${{ secrets.DOCKER_REGISTRY }}/marketplace-api:${{ github.sha }}"
+          echo "TODO: Implement deployment to target platform"
+
+      - name: Deploy Web
+        run: |
+          echo "Deploying Web image: ${{ secrets.DOCKER_REGISTRY }}/marketplace-web:${{ github.sha }}"
+          echo "TODO: Implement deployment to target platform"
+
+      - name: Run database migrations
+        run: |
+          echo "TODO: Run prisma migrate deploy against production database"
+          echo "This should happen BEFORE the new API version is deployed"
+
+      - name: Verify deployment
+        run: |
+          echo "TODO: Add health check verification"
+          echo "curl -f https://api.marketplace.example.com/health || exit 1"

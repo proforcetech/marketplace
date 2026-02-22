@@ -1,0 +1,137 @@
+{
+  "expo": {
+    "name": "Marketplace",
+    "slug": "marketplace",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "marketplace",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1A2E"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.marketplace.app",
+      "associatedDomains": ["applinks:marketplace.app"],
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Find items and services near your location.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Get notified when new items matching your saved searches appear near you.",
+        "NSCameraUsageDescription": "Take photos of items you want to sell.",
+        "NSPhotoLibraryUsageDescription": "Select photos from your library for your listings.",
+        "NSMicrophoneUsageDescription": "Record video of items you want to sell."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A1A2E"
+      },
+      "package": "com.marketplace.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "marketplace.app",
+              "pathPrefix": "/listing"
+            },
+            {
+              "scheme": "https",
+              "host": "marketplace.app",
+              "pathPrefix": "/user"
+            },
+            {
+              "scheme": "https",
+              "host": "marketplace.app",
+              "pathPrefix": "/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "marketplace.app",
+              "pathPrefix": "/search"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Get notified when new items matching your saved searches appear near you.",
+          "locationWhenInUsePermission": "Find items and services near your location.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Take photos of items you want to sell.",
+          "microphonePermission": "Record video of items you want to sell.",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Select photos from your library for your listings."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4A90D9",
+          "sounds": ["./assets/sounds/notification.wav"]
+        }
+      ],
+      [
+        "react-native-maps",
+        {
+          "googleMapsApiKey": "GOOGLE_MAPS_API_KEY_PLACEHOLDER"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://marketplace.app"
+      },
+      "eas": {
+        "projectId": "PLACEHOLDER_EAS_PROJECT_ID"
+      },
+      "EXPO_PUBLIC_API_URL": "http://localhost:3000/api/v1",
+      "EXPO_PUBLIC_WS_URL": "http://localhost:3000"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/PLACEHOLDER_EAS_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}
