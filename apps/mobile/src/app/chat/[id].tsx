@@ -25,6 +25,8 @@ import { useThemeColors } from '@/hooks/useColorScheme';
 import { useAuthStore } from '@/stores/auth-store';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { Config } from '@/constants/config';
+import { ExchangeQRModal } from '@/components/ExchangeQRModal';
+import { ExchangeScannerModal } from '@/components/ExchangeScannerModal';
 
 /**
  * Real-time chat thread screen.
@@ -51,6 +53,7 @@ interface ListingInfo {
 
 interface ConversationDetail {
   id: string;
+  sellerId: string;
   otherUser: OtherUser;
   listing: ListingInfo;
   safetyWarning?: boolean;
@@ -84,6 +87,10 @@ export default function ChatThreadScreen(): React.JSX.Element {
   const [typingUserName, setTypingUserName] = useState('');
   const [isConnected, setIsConnected] = useState(isSocketConnected());
   const [dismissedSafetyWarning, setDismissedSafetyWarning] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [exchangeConfirmed, setExchangeConfirmed] = useState(false);
+  const exchangeBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList<Message>>(null);
@@ -103,6 +110,7 @@ export default function ChatThreadScreen(): React.JSX.Element {
       if (found) {
         return {
           id: found.id,
+          sellerId: found.sellerId as string,
           otherUser: found.otherUser,
           listing: {
             id: found.listingId,
@@ -327,6 +335,24 @@ export default function ChatThreadScreen(): React.JSX.Element {
     setInputText('');
   }, [inputText, conversationId, currentUser, queryClient]);
 
+  // Clear exchange banner timer on unmount
+  useEffect(() => {
+    return () => {
+      if (exchangeBannerTimerRef.current) {
+        clearTimeout(exchangeBannerTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleExchangeSuccess = useCallback(() => {
+    setExchangeConfirmed(true);
+    exchangeBannerTimerRef.current = setTimeout(() => {
+      setExchangeConfirmed(false);
+    }, 5000);
+  }, []);
+
+  const isSeller = conversation?.sellerId === currentUser?.id;
+
   // --- Load more (scroll to top of inverted list = older messages) ---
 
   const handleLoadMore = useCallback(() => {
@@ -457,12 +483,35 @@ export default function ChatThreadScreen(): React.JSX.Element {
 
   // --- Loading state ---
 
+  const headerRight = useCallback(
+    () =>
+      conversation ? (
+        <Pressable
+          onPress={() =>
+            isSeller ? setShowQRModal(true) : setShowScannerModal(true)
+          }
+          hitSlop={12}
+          style={styles.exchangeButton}
+          accessibilityRole="button"
+          accessibilityLabel={isSeller ? 'Show exchange QR code' : 'Scan exchange QR code'}
+        >
+          <Ionicons
+            name={isSeller ? 'qr-code-outline' : 'scan-outline'}
+            size={22}
+            color={colors.primary}
+          />
+        </Pressable>
+      ) : null,
+    [conversation, isSeller, colors.primary],
+  );
+
   if (isLoadingMessages) {
     return (
       <>
         <Stack.Screen
           options={{
             headerTitle: () => headerTitle(),
+            headerRight,
           }}
         />
         <View style={[styles.center, { backgroundColor: colors.background }]}>
@@ -479,6 +528,7 @@ export default function ChatThreadScreen(): React.JSX.Element {
       <Stack.Screen
         options={{
           headerTitle: () => headerTitle(),
+          headerRight,
         }}
       />
       <KeyboardAvoidingView
@@ -486,6 +536,18 @@ export default function ChatThreadScreen(): React.JSX.Element {
         behavior={Platform.select({ ios: 'padding', android: undefined })}
         keyboardVerticalOffset={Platform.select({ ios: 90, android: 0 })}
       >
+        {/* Exchange confirmed banner */}
+        {exchangeConfirmed && (
+          <View
+            style={styles.exchangeBanner}
+            accessibilityRole="alert"
+            accessibilityLabel="Exchange confirmed"
+          >
+            <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+            <Text style={styles.exchangeBannerText}>Exchange confirmed!</Text>
+          </View>
+        )}
+
         {/* Reconnecting banner */}
         {!isConnected && (
           <View
@@ -611,6 +673,22 @@ export default function ChatThreadScreen(): React.JSX.Element {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Seller: show QR code for buyer to scan */}
+      {conversation && (
+        <ExchangeQRModal
+          conversationId={conversation.id}
+          visible={showQRModal}
+          onClose={() => setShowQRModal(false)}
+        />
+      )}
+
+      {/* Buyer: scan seller's QR code */}
+      <ExchangeScannerModal
+        visible={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        onSuccess={handleExchangeSuccess}
+      />
     </>
   );
 }
@@ -637,6 +715,26 @@ const styles = StyleSheet.create({
   headerListingTitle: {
     ...Typography.caption1,
     marginTop: 1,
+  },
+
+  // Exchange button (header right)
+  exchangeButton: {
+    paddingHorizontal: Spacing.sm,
+  },
+
+  // Exchange confirmed banner
+  exchangeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#16A34A',
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  exchangeBannerText: {
+    ...Typography.footnote,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 
   // Reconnecting banner
