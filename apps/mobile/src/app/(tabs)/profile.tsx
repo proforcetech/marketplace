@@ -36,6 +36,7 @@ const MENU_ITEMS: MenuItem[] = [
   { icon: 'list-outline', label: 'My Listings', route: '/settings' },
   { icon: 'heart-outline', label: 'Saved Items', route: '/settings' },
   { icon: 'bookmark-outline', label: 'Saved Searches', route: '/settings/saved-searches' },
+  { icon: 'receipt-outline', label: 'Transaction History', route: '/transactions' },
   { icon: 'star-outline', label: 'Ratings & Reviews', route: '/settings' },
   { icon: 'megaphone-outline', label: 'Promotions', route: '/settings' },
 ];
