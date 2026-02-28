@@ -112,7 +112,8 @@
         {
           "googleMapsApiKey": "GOOGLE_MAPS_API_KEY_PLACEHOLDER"
         }
-      ]
+      ],
+      "@stripe/stripe-react-native"
     ],
     "experiments": {
       "typedRoutes": true
@@ -125,7 +126,8 @@
         "projectId": "PLACEHOLDER_EAS_PROJECT_ID"
       },
       "EXPO_PUBLIC_API_URL": "http://localhost:3000/api/v1",
-      "EXPO_PUBLIC_WS_URL": "http://localhost:3000"
+      "EXPO_PUBLIC_WS_URL": "http://localhost:3000",
+      "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_PLACEHOLDER"
     },
     "updates": {
       "url": "https://u.expo.dev/PLACEHOLDER_EAS_PROJECT_ID"

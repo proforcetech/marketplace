@@ -22,6 +22,7 @@ import { api, APIError } from '@/services/api';
 import { useThemeColors } from '@/hooks/useColorScheme';
 import { useAuthStore } from '@/stores/auth-store';
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { PurchaseModal } from '@/components/PurchaseModal';
 
 /**
  * Listing detail screen.
@@ -99,6 +100,8 @@ export default function ListingDetailScreen() {
   const imageScrollRef = useRef<FlatList>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isMessaging, setIsMessaging] = useState(false);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [purchaseComplete, setPurchaseComplete] = useState(false);
 
   const {
     data: listing,
@@ -272,6 +275,23 @@ export default function ListingDetailScreen() {
 
   const isOwnListing = currentUser?.id === seller?.id;
 
+  // The API wraps responses: { data: listing }. Access raw listing fields via .data.
+  const listingData = (listing as Record<string, unknown>)?.data as Record<string, unknown> | undefined ?? listing;
+  const isBuyable =
+    !isOwnListing &&
+    !purchaseComplete &&
+    listingData?.priceType === 'fixed' &&
+    typeof listingData?.price === 'number' &&
+    (listingData.price as number) > 0 &&
+    (listingData?.status === 'active' || listing?.status === 'active');
+
+  const handleBuyNow = useCallback(() => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    setShowPurchaseModal(true);
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Floating Header */}
@@ -296,7 +316,7 @@ export default function ListingDetailScreen() {
 
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + (isBuyable ? 120 : 80) }}
         showsVerticalScrollIndicator={false}
       >
         {/* Image Gallery */}
@@ -527,24 +547,74 @@ export default function ListingDetailScreen() {
             },
           ]}
         >
+          {isBuyable && (
+            <Pressable
+              style={[styles.buyNowButton]}
+              onPress={handleBuyNow}
+              accessibilityRole="button"
+              accessibilityLabel={`Buy now for ${formatPrice(
+                (listingData?.price as number) ?? listing?.price ?? 0,
+                'fixed',
+              )}`}
+            >
+              <Ionicons name="card-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.buyNowText}>
+                Buy Now ·{' '}
+                {formatPrice(
+                  (listingData?.price as number) ?? listing?.price ?? 0,
+                  'fixed',
+                )}
+              </Text>
+            </Pressable>
+          )}
           <Pressable
-            style={[styles.stickyMessageButton, { backgroundColor: colors.primary }]}
+            style={[
+              styles.stickyMessageButton,
+              isBuyable
+                ? { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }
+                : { backgroundColor: colors.primary },
+            ]}
             onPress={handleMessageSeller}
             disabled={isMessaging}
             accessibilityRole="button"
             accessibilityLabel="Message seller"
           >
             {isMessaging ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+              <ActivityIndicator size="small" color={isBuyable ? colors.text : '#FFFFFF'} />
             ) : (
               <>
-                <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.stickyMessageText}>Message Seller</Text>
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={20}
+                  color={isBuyable ? colors.text : '#FFFFFF'}
+                />
+                <Text
+                  style={[
+                    styles.stickyMessageText,
+                    isBuyable && { color: colors.text },
+                  ]}
+                >
+                  Message Seller
+                </Text>
               </>
             )}
           </Pressable>
         </View>
       )}
+
+      {/* Purchase Modal */}
+      <PurchaseModal
+        visible={showPurchaseModal}
+        listingId={id}
+        listingTitle={listing?.title ?? (listingData?.title as string) ?? ''}
+        price={(listingData?.price as number) ?? listing?.price ?? 0}
+        priceType={(listingData?.priceType as string) ?? listing?.priceType ?? 'fixed'}
+        onSuccess={() => {
+          setPurchaseComplete(true);
+          refetch();
+        }}
+        onDismiss={() => setShowPurchaseModal(false)}
+      />
     </View>
   );
 }
@@ -783,6 +853,21 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  buyNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    minHeight: 52,
+    backgroundColor: '#16a34a',
+  },
+  buyNowText: {
+    ...Typography.headline,
+    color: '#FFFFFF',
   },
   stickyMessageButton: {
     flexDirection: 'row',

@@ -268,4 +268,22 @@ export const api = {
         { method: 'POST', body: { token } },
       ),
   },
+
+  payments: {
+    initiatePurchase: (listingId: string) =>
+      request<{ data: { clientSecret: string; publishableKey: string; transactionId: string } }>(
+        '/purchase',
+        { method: 'POST', body: { listingId } },
+      ),
+
+    getTransactions: (params?: { limit?: number; page?: number }) => {
+      const query = new URLSearchParams();
+      if (params?.limit) query.set('limit', String(params.limit));
+      if (params?.page) query.set('page', String(params.page));
+      return request<{
+        data: Record<string, unknown>[];
+        pagination: { total: number; page: number; limit: number };
+      }>(`/transactions?${query.toString()}`);
+    },
+  },
 } as const;

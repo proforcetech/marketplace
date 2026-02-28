@@ -206,7 +206,7 @@ Status legend:
 | Offer / counteroffer system | [x] | `OffersModule` — create, respond (accept/decline/counter), withdraw, expire cron; `OfferButton.tsx` on listing detail |
 | Subscription plans for power sellers | [x] | `SubscriptionsModule` — Stripe Checkout + webhook lifecycle; 3 tiers (basic/pro/unlimited); `app/(main)/settings/subscription/page.tsx` |
 | Advanced moderation automation | [~] | `RiskScoringProcessor` auto-holds (≥70) / auto-rejects (≥90); full ML pipeline deferred |
-| In-app checkout + Stripe Connect payouts | [ ] | Deferred — requires Connect onboarding flow |
+| In-app checkout + Stripe Connect payouts | [x] | Web: `/settings/payouts` with Connect onboarding, status, dashboard link, transaction history. Mobile: `PurchaseModal` with Stripe payment sheet, `Buy Now` button on listing detail, `api.payments.*` client |
 | Prisma schema additions | [x] | `PushToken`, `Offer`, `SellerSubscription`, `SavedSearch`, `BadMediaHash`, `ExchangeToken` models added; `MediaProcessingStatus` enum + `processingStatus` field on `ListingMedia` |
 
 ---

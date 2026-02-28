@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 import { useAuthStore, getRefreshToken, storeTokens, clearTokens } from '@/stores/auth-store';
 import { setupNotificationResponseHandler, registerForPushNotifications } from '@/services/notifications';
@@ -121,10 +122,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <Slot />
-        </QueryClientProvider>
+        <StripeProvider
+          publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+          merchantIdentifier="merchant.com.marketplace.app"
+          urlScheme="marketplace"
+        >
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <Slot />
+          </QueryClientProvider>
+        </StripeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
