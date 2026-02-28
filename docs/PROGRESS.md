@@ -1,6 +1,6 @@
 # Project Progress
 
-Last updated: 2026-02-22
+Last updated: 2026-02-28
 
 This document tracks the development status of the Marketplace application across all phases. It serves as the single source of truth for what has been completed, what is in progress, and what remains.
 
@@ -189,7 +189,8 @@ Status legend:
 | Offline support / caching | [x] | MMKV-backed cache (5-min TTL) in `stores/cache-store.ts`; `OfflineBanner` component |
 | QR code exchange handshake | [x] | `ExchangeModule` — seller generates JWT QR token (`POST /conversations/:id/exchange-qr`), buyer confirms by scan (`POST /exchange-tokens/confirm`); `ExchangeQRModal` + `ExchangeScannerModal`; wired into chat header |
 | Web notification bell | [x] | `NotificationBell.tsx` — React Query polling (30s), unread badge, dropdown, mark-all-read; added to `Header.tsx` |
-| App store submission | [ ] | Requires EAS account setup |
+| Transaction history screen | [x] | `app/transactions.tsx` — paginated list, All/Purchases/Sales tabs, status badges, pull-to-refresh; linked from profile menu |
+| App store submission | [ ] | Requires EAS account setup, signing certs, real icon/splash assets |
 
 ---
 
@@ -248,5 +249,7 @@ Status legend:
 3. **Monitoring and observability** -- Which tools for APM, error tracking, and metrics? (Datadog, Sentry, Grafana, etc.) Nothing is instrumented yet.
 
 4. **Legal and compliance** -- Privacy policy, terms of service, CCPA/GDPR considerations for user data and location tracking.
+
+5. **Credentials and keys** -- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `GOOGLE_MAPS_API_KEY`, and SMTP provider credentials all use placeholders and must be configured before launch.
 
 5. **Email provider** -- `EmailService` uses nodemailer; a real SMTP provider (SendGrid, AWS SES, Resend) needs to be configured and templates tested end-to-end.
