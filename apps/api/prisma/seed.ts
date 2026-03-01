@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, ListingStatus, PriceType, ItemCondition, MediaType, CategoryFieldType } from '@prisma/client';
+import { PrismaClient, UserRole, ListingStatus, PriceType, ItemCondition, CategoryFieldType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -7,16 +7,22 @@ const prisma = new PrismaClient();
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function hash(password: string): Promise<string> {
+async function hashPw(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
 
-function slug(title: string, suffix = ''): string {
+function makeSlug(title: string, suffix = ''): string {
   const base = title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
   return suffix ? `${base}-${suffix}` : base;
+}
+
+function mustGet(map: Record<string, string>, key: string): string {
+  const val = map[key];
+  if (!val) throw new Error(`Key not found in map: ${key}`);
+  return val;
 }
 
 // ---------------------------------------------------------------------------
@@ -26,7 +32,7 @@ function slug(title: string, suffix = ''): string {
 async function seedCategories(): Promise<Record<string, string>> {
   console.log('Seeding categories…');
 
-  const roots = [
+  const roots: Array<{ name: string; slug: string; icon: string }> = [
     { name: 'Electronics', slug: 'electronics', icon: 'phone-portrait-outline' },
     { name: 'Vehicles', slug: 'vehicles', icon: 'car-outline' },
     { name: 'Home & Garden', slug: 'home-garden', icon: 'home-outline' },
@@ -41,13 +47,13 @@ async function seedCategories(): Promise<Record<string, string>> {
 
   const idMap: Record<string, string> = {};
 
-  for (let i = 0; i < roots.length; i++) {
+  for (const [i, root] of roots.entries()) {
     const cat = await prisma.category.upsert({
-      where: { slug: roots[i].slug },
+      where: { slug: root.slug },
       update: {},
-      create: { ...roots[i], position: i, isActive: true },
+      create: { name: root.name, slug: root.slug, icon: root.icon, position: i, isActive: true },
     });
-    idMap[roots[i].slug] = cat.id;
+    idMap[root.slug] = cat.id;
   }
 
   // Sub-categories
@@ -74,44 +80,47 @@ async function seedCategories(): Promise<Record<string, string>> {
     { parent: 'services', name: 'Events', slug: 'events', icon: 'calendar-outline' },
   ];
 
-  for (let i = 0; i < subs.length; i++) {
-    const { parent, ...rest } = subs[i];
+  for (const [i, sub] of subs.entries()) {
     const cat = await prisma.category.upsert({
-      where: { slug: rest.slug },
+      where: { slug: sub.slug },
       update: {},
-      create: { ...rest, parentId: idMap[parent], position: i, isActive: true },
+      create: {
+        name: sub.name,
+        slug: sub.slug,
+        icon: sub.icon,
+        parentId: mustGet(idMap, sub.parent),
+        position: i,
+        isActive: true,
+      },
     });
-    idMap[rest.slug] = cat.id;
+    idMap[sub.slug] = cat.id;
   }
 
-  // Category fields
+  // Category fields for phones
   await prisma.categoryField.deleteMany({ where: { category: { slug: 'phones-tablets' } } });
-  const phoneCat = await prisma.category.findUnique({ where: { slug: 'phones-tablets' } });
-  if (phoneCat) {
-    await prisma.categoryField.createMany({
-      data: [
-        { categoryId: phoneCat.id, name: 'brand', label: 'Brand', type: CategoryFieldType.select, options: ['Apple', 'Samsung', 'Google', 'OnePlus', 'Other'], isFilterable: true, position: 0 },
-        { categoryId: phoneCat.id, name: 'storage', label: 'Storage', type: CategoryFieldType.select, options: ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB'], isFilterable: true, position: 1 },
-        { categoryId: phoneCat.id, name: 'color', label: 'Color', type: CategoryFieldType.text, position: 2 },
-        { categoryId: phoneCat.id, name: 'carrier', label: 'Carrier', type: CategoryFieldType.select, options: ['Unlocked', 'AT&T', 'Verizon', 'T-Mobile', 'Other'], isFilterable: true, position: 3 },
-      ],
-    });
-  }
+  const phoneCatId = mustGet(idMap, 'phones-tablets');
+  await prisma.categoryField.createMany({
+    data: [
+      { categoryId: phoneCatId, name: 'brand', label: 'Brand', type: CategoryFieldType.select, options: ['Apple', 'Samsung', 'Google', 'OnePlus', 'Other'], isFilterable: true, position: 0 },
+      { categoryId: phoneCatId, name: 'storage', label: 'Storage', type: CategoryFieldType.select, options: ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB'], isFilterable: true, position: 1 },
+      { categoryId: phoneCatId, name: 'color', label: 'Color', type: CategoryFieldType.text, position: 2 },
+      { categoryId: phoneCatId, name: 'carrier', label: 'Carrier', type: CategoryFieldType.select, options: ['Unlocked', 'AT&T', 'Verizon', 'T-Mobile', 'Other'], isFilterable: true, position: 3 },
+    ],
+  });
 
+  // Category fields for cars
   await prisma.categoryField.deleteMany({ where: { category: { slug: 'cars-trucks' } } });
-  const carCat = await prisma.category.findUnique({ where: { slug: 'cars-trucks' } });
-  if (carCat) {
-    await prisma.categoryField.createMany({
-      data: [
-        { categoryId: carCat.id, name: 'make', label: 'Make', type: CategoryFieldType.text, isRequired: true, isFilterable: true, position: 0 },
-        { categoryId: carCat.id, name: 'model', label: 'Model', type: CategoryFieldType.text, isRequired: true, position: 1 },
-        { categoryId: carCat.id, name: 'year', label: 'Year', type: CategoryFieldType.number, isRequired: true, isFilterable: true, position: 2 },
-        { categoryId: carCat.id, name: 'mileage', label: 'Mileage', type: CategoryFieldType.number, position: 3 },
-        { categoryId: carCat.id, name: 'transmission', label: 'Transmission', type: CategoryFieldType.select, options: ['Automatic', 'Manual', 'CVT'], isFilterable: true, position: 4 },
-        { categoryId: carCat.id, name: 'fuel_type', label: 'Fuel Type', type: CategoryFieldType.select, options: ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid'], isFilterable: true, position: 5 },
-      ],
-    });
-  }
+  const carCatId = mustGet(idMap, 'cars-trucks');
+  await prisma.categoryField.createMany({
+    data: [
+      { categoryId: carCatId, name: 'make', label: 'Make', type: CategoryFieldType.text, isRequired: true, isFilterable: true, position: 0 },
+      { categoryId: carCatId, name: 'model', label: 'Model', type: CategoryFieldType.text, isRequired: true, position: 1 },
+      { categoryId: carCatId, name: 'year', label: 'Year', type: CategoryFieldType.number, isRequired: true, isFilterable: true, position: 2 },
+      { categoryId: carCatId, name: 'mileage', label: 'Mileage', type: CategoryFieldType.number, position: 3 },
+      { categoryId: carCatId, name: 'transmission', label: 'Transmission', type: CategoryFieldType.select, options: ['Automatic', 'Manual', 'CVT'], isFilterable: true, position: 4 },
+      { categoryId: carCatId, name: 'fuel_type', label: 'Fuel Type', type: CategoryFieldType.select, options: ['Gasoline', 'Diesel', 'Electric', 'Hybrid', 'Plug-in Hybrid'], isFilterable: true, position: 5 },
+    ],
+  });
 
   console.log(`  ✓ ${Object.keys(idMap).length} categories`);
   return idMap;
@@ -121,10 +130,22 @@ async function seedCategories(): Promise<Record<string, string>> {
 // Users
 // ---------------------------------------------------------------------------
 
+interface SeedUser {
+  email: string;
+  password: string;
+  displayName: string;
+  role: UserRole;
+  locationLat: number;
+  locationLng: number;
+  locationCity: string;
+  locationState: string;
+  phoneVerified?: boolean;
+}
+
 async function seedUsers(): Promise<Record<string, string>> {
   console.log('Seeding users…');
 
-  const users = [
+  const users: SeedUser[] = [
     {
       email: 'admin@marketplace.local',
       password: 'Admin1234!',
@@ -181,17 +202,18 @@ async function seedUsers(): Promise<Record<string, string>> {
 
   const idMap: Record<string, string> = {};
 
-  for (const { password, email, ...rest } of users) {
-    const passwordHash = await hash(password);
+  for (const u of users) {
+    const { password, email, locationLat, locationLng, ...rest } = u;
+    const passwordHash = await hashPw(password);
     const user = await prisma.user.upsert({
       where: { email },
       update: {},
-      create: { email, passwordHash, ...rest },
+      create: { email, passwordHash, locationLat, locationLng, ...rest },
     });
     idMap[email] = user.id;
   }
 
-  // Update PostGIS geography columns for each seeded user
+  // Sync PostGIS geography columns
   for (const u of users) {
     await prisma.$executeRaw`
       UPDATE users
@@ -213,20 +235,35 @@ async function seedUsers(): Promise<Record<string, string>> {
 // Listings
 // ---------------------------------------------------------------------------
 
+interface SeedListing {
+  userId: string;
+  categoryId: string;
+  title: string;
+  description: string;
+  price: number;
+  priceType: PriceType;
+  condition: ItemCondition;
+  status: ListingStatus;
+  locationLat: number;
+  locationLng: number;
+  locationCity: string;
+  locationState: string;
+}
+
 async function seedListings(
   categoryIds: Record<string, string>,
   userIds: Record<string, string>,
 ): Promise<void> {
   console.log('Seeding listings…');
 
-  const alice = userIds['alice@example.com'];
-  const bob = userIds['bob@example.com'];
-  const carol = userIds['carol@example.com'];
+  const alice = mustGet(userIds, 'alice@example.com');
+  const bob = mustGet(userIds, 'bob@example.com');
+  const carol = mustGet(userIds, 'carol@example.com');
 
-  const listings = [
+  const listings: SeedListing[] = [
     {
       userId: alice,
-      categoryId: categoryIds['phones-tablets'],
+      categoryId: mustGet(categoryIds, 'phones-tablets'),
       title: 'iPhone 15 Pro 256GB – Natural Titanium',
       description: 'Barely used iPhone 15 Pro in great condition. Comes with original box, charger, and two screen protectors. No scratches, face ID works perfectly.',
       price: 89900,
@@ -240,7 +277,7 @@ async function seedListings(
     },
     {
       userId: alice,
-      categoryId: categoryIds['computers-laptops'],
+      categoryId: mustGet(categoryIds, 'computers-laptops'),
       title: 'MacBook Air M2 – 16GB/512GB Space Gray',
       description: 'Selling my MacBook Air M2. Purchased 8 months ago, works flawlessly. Battery health at 97%. Includes charger and sleeve.',
       price: 119900,
@@ -254,7 +291,7 @@ async function seedListings(
     },
     {
       userId: bob,
-      categoryId: categoryIds['furniture'],
+      categoryId: mustGet(categoryIds, 'furniture'),
       title: 'Mid-Century Modern Sofa – Mustard Yellow',
       description: 'Beautiful mid-century modern 3-seater sofa in excellent condition. Pet-free and smoke-free home. Pickup only.',
       price: 45000,
@@ -268,7 +305,7 @@ async function seedListings(
     },
     {
       userId: bob,
-      categoryId: categoryIds['gaming'],
+      categoryId: mustGet(categoryIds, 'gaming'),
       title: 'PlayStation 5 Disc Edition + 2 Controllers',
       description: 'PS5 disc edition bundle with 2 DualSense controllers. Includes all original cables. Works perfectly.',
       price: 42500,
@@ -282,7 +319,7 @@ async function seedListings(
     },
     {
       userId: carol,
-      categoryId: categoryIds['cars-trucks'],
+      categoryId: mustGet(categoryIds, 'cars-trucks'),
       title: '2019 Honda Civic EX – 42k Miles',
       description: 'Well maintained 2019 Honda Civic EX sedan. Single owner, clean title. Recent oil change and tire rotation. Great fuel economy.',
       price: 1895000,
@@ -296,7 +333,7 @@ async function seedListings(
     },
     {
       userId: carol,
-      categoryId: categoryIds['garden-outdoor'],
+      categoryId: mustGet(categoryIds, 'garden-outdoor'),
       title: 'Patio Dining Set – 6 Chairs + Table',
       description: 'Aluminum outdoor dining set. Table and 6 chairs in good condition, some minor surface rust on table legs. Umbrella not included.',
       price: 28000,
@@ -310,9 +347,9 @@ async function seedListings(
     },
     {
       userId: alice,
-      categoryId: categoryIds['free-stuff'],
+      categoryId: mustGet(categoryIds, 'free-stuff'),
       title: 'Free: Moving boxes – various sizes',
-      description: 'About 30 boxes left over from our move. Various sizes. You haul, they\'re yours. Available weekends.',
+      description: "About 30 boxes left over from our move. Various sizes. You haul, they're yours. Available weekends.",
       price: 0,
       priceType: PriceType.free,
       condition: ItemCondition.used,
@@ -324,7 +361,7 @@ async function seedListings(
     },
     {
       userId: bob,
-      categoryId: categoryIds['tools'],
+      categoryId: mustGet(categoryIds, 'tools'),
       title: 'DeWalt 20V MAX Drill/Driver Kit',
       description: 'DeWalt DCD771C2 drill/driver kit. Two batteries, charger, and kit bag included. Used on a single project.',
       price: 8500,
@@ -341,20 +378,13 @@ async function seedListings(
   let count = 0;
   for (const listing of listings) {
     const { locationLat, locationLng, ...rest } = listing;
-    const uniqueSlug = slug(listing.title, String(Date.now() + count));
+    const uniqueSlug = makeSlug(listing.title, String(Date.now() + count));
     const created = await prisma.listing.upsert({
       where: { slug: uniqueSlug },
       update: {},
-      create: {
-        ...rest,
-        locationLat,
-        locationLng,
-        slug: uniqueSlug,
-        publishedAt: new Date(),
-      },
+      create: { ...rest, locationLat, locationLng, slug: uniqueSlug, publishedAt: new Date() },
     });
 
-    // Sync PostGIS geography column
     await prisma.$executeRaw`
       UPDATE listings
       SET location = ST_SetSRID(ST_MakePoint(${locationLng}, ${locationLat}), 4326)::geography
@@ -372,18 +402,18 @@ async function seedListings(
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  console.log('\n🌱 Starting database seed…\n');
+  console.log('\nStarting database seed…\n');
 
   const categoryIds = await seedCategories();
   const userIds = await seedUsers();
   await seedListings(categoryIds, userIds);
 
-  console.log('\n✅ Seed complete.\n');
+  console.log('\nSeed complete.\n');
 }
 
 main()
-  .catch((err) => {
-    console.error('❌ Seed failed:', err);
+  .catch((err: unknown) => {
+    console.error('Seed failed:', err);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
