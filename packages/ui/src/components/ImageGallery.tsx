@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export interface GalleryImage {
   url: string;

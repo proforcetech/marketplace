@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
-import { Button } from './Button.js';
-import { Input } from './Input.js';
-import { Select } from './Select.js';
-import { Tag } from './Tag.js';
+import { cn } from '../lib/cn';
+import { Button } from './Button';
+import { Input } from './Input';
+import { Select } from './Select';
+import { Tag } from './Tag';
 import type { ItemCondition, SearchSortBy, CategoryTree } from '@marketplace/shared';
 
 export interface FilterValues {

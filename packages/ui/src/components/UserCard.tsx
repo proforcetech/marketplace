@@ -1,8 +1,8 @@
-import { cn } from '../lib/cn.js';
-import { Avatar } from './Avatar.js';
-import { Badge } from './Badge.js';
-import { RatingStars } from './RatingStars.js';
-import { Button } from './Button.js';
+import { cn } from '../lib/cn';
+import { Avatar } from './Avatar';
+import { Badge } from './Badge';
+import { RatingStars } from './RatingStars';
+import { Button } from './Button';
 import type { PublicUser } from '@marketplace/shared';
 
 export interface UserCardProps {

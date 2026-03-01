@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export type InputVariant = 'default' | 'search';
 export type InputSize = 'sm' | 'md' | 'lg';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export type ModalSize = 'sm' | 'md' | 'lg';
 

@@ -1,8 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
-import { Button, type ButtonProps } from './Button.js';
+import { cn } from '../lib/cn';
+import { Button, type ButtonProps } from './Button';
 
 export interface EmptyStateAction {
   label: string;

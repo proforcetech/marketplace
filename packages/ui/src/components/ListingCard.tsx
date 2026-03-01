@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, type MouseEvent } from 'react';
-import { cn } from '../lib/cn.js';
-import { Badge } from './Badge.js';
+import { cn } from '../lib/cn';
+import { Badge } from './Badge';
 import type { ListingSummary, ItemCondition } from '@marketplace/shared';
 
 export interface ListingCardProps {

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useId } from 'react';
-import { cn } from '../lib/cn.js';
-import { Button } from './Button.js';
+import { cn } from '../lib/cn';
+import { Button } from './Button';
 
 export interface LocationPickerValue {
   address: string;

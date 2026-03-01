@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
-import { Button } from './Button.js';
-import { Avatar } from './Avatar.js';
+import { cn } from '../lib/cn';
+import { Button } from './Button';
+import { Avatar } from './Avatar';
 import type { User } from '@marketplace/shared';
 import {
   Menu,

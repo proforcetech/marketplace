@@ -1,4 +1,4 @@
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import type { MessageType } from '@marketplace/shared';
 
 export interface MessageBubbleProps {

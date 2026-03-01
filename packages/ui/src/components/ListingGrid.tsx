@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useRef, type ReactNode } from 'react';
-import { cn } from '../lib/cn.js';
-import { ListingCard, type ListingCardProps } from './ListingCard.js';
-import { SkeletonCard } from './SkeletonCard.js';
-import { EmptyState } from './EmptyState.js';
+import { cn } from '../lib/cn';
+import { ListingCard, type ListingCardProps } from './ListingCard';
+import { SkeletonCard } from './SkeletonCard';
+import { EmptyState } from './EmptyState';
 import type { ListingSummary } from '@marketplace/shared';
 
 export type ListingGridLayout = 'grid' | 'list';

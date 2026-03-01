@@ -7,9 +7,9 @@ import {
   useCallback,
   type FormEvent,
 } from 'react';
-import { cn } from '../lib/cn.js';
-import { MessageBubble, TypingIndicator } from './MessageBubble.js';
-import { Button } from './Button.js';
+import { cn } from '../lib/cn';
+import { MessageBubble, TypingIndicator } from './MessageBubble';
+import { Button } from './Button';
 import type { Conversation, Message } from '@marketplace/shared';
 
 export interface ChatWindowProps {

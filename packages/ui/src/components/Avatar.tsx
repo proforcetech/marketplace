@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ImgHTMLAttributes } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 

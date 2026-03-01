@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, type ChangeEvent } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 import type { PriceType } from '@marketplace/shared';
 
 export interface PriceInputProps {

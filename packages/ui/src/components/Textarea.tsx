@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useId, type TextareaHTMLAttributes } from 'react';
-import { cn } from '../lib/cn.js';
+import { cn } from '../lib/cn';
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** Label displayed above the textarea. */
