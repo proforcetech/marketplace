@@ -213,13 +213,17 @@ async function seedUsers(): Promise<Record<string, string>> {
     idMap[email] = user.id;
   }
 
-  // Sync PostGIS geography columns
+  // Sync PostGIS geography columns (best-effort — column may not exist in all envs)
   for (const u of users) {
-    await prisma.$executeRaw`
-      UPDATE users
-      SET location = ST_SetSRID(ST_MakePoint(${u.locationLng}, ${u.locationLat}), 4326)::geography
-      WHERE email = ${u.email}
-    `;
+    try {
+      await prisma.$executeRaw`
+        UPDATE users
+        SET location = ST_SetSRID(ST_MakePoint(${u.locationLng}, ${u.locationLat}), 4326)::geography
+        WHERE email = ${u.email}
+      `;
+    } catch {
+      // geography column not present; lat/lng float columns are still set
+    }
   }
 
   console.log(`  ✓ ${users.length} users`);
@@ -385,11 +389,15 @@ async function seedListings(
       create: { ...rest, locationLat, locationLng, slug: uniqueSlug, publishedAt: new Date() },
     });
 
-    await prisma.$executeRaw`
-      UPDATE listings
-      SET location = ST_SetSRID(ST_MakePoint(${locationLng}, ${locationLat}), 4326)::geography
-      WHERE id = ${created.id}
-    `;
+    try {
+      await prisma.$executeRaw`
+        UPDATE listings
+        SET location = ST_SetSRID(ST_MakePoint(${locationLng}, ${locationLat}), 4326)::geography
+        WHERE id = ${created.id}
+      `;
+    } catch {
+      // geography column not present; lat/lng float columns are still set
+    }
 
     count++;
   }
