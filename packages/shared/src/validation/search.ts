@@ -18,7 +18,7 @@ export const searchListingsSchema = z.object({
   condition: z
     .union([z.nativeEnum(ItemCondition), z.array(z.nativeEnum(ItemCondition))])
     .optional()
-    .transform((val) => (val && !Array.isArray(val) ? [val] : val)),
+    .transform((val: ItemCondition | ItemCondition[] | undefined) => (val && !Array.isArray(val) ? [val] : val)),
   customFields: z.record(z.unknown()).optional(),
   sort: z.enum(['distance', 'newest', 'price_asc', 'price_desc']).optional().default('distance'),
   page: z.coerce.number().int().min(1).optional().default(1),

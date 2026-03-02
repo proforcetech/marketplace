@@ -19,18 +19,18 @@ export class CreateRatingDto {
   @ApiProperty({ description: 'ID of the listing the interaction was about' })
   @IsString()
   @IsNotEmpty()
-  listingId: string;
+  listingId!: string;
 
   @ApiProperty({ description: 'ID of the user being rated' })
   @IsString()
   @IsNotEmpty()
-  revieweeId: string;
+  revieweeId!: string;
 
   @ApiProperty({ description: 'Rating score (1-5)', minimum: 1, maximum: 5 })
   @IsInt()
   @Min(1)
   @Max(5)
-  score: number;
+  score!: number;
 
   @ApiPropertyOptional({ description: 'Optional review comment', maxLength: 1000 })
   @IsOptional()
@@ -40,5 +40,5 @@ export class CreateRatingDto {
 
   @ApiProperty({ enum: RatingType, description: 'Type of rating' })
   @IsEnum(RatingType)
-  ratingType: RatingType;
+  ratingType!: RatingType;
 }

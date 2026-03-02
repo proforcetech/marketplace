@@ -282,8 +282,11 @@ export class AuditLogInterceptor implements NestInterceptor {
 
     // Extract target resource ID
     let targetId: string | undefined;
-    if (options?.targetIdParam && request.params[options.targetIdParam]) {
-      targetId = request.params[options.targetIdParam];
+    if (options?.targetIdParam) {
+      const raw = request.params[options.targetIdParam];
+      if (raw) {
+        targetId = Array.isArray(raw) ? raw[0] : raw;
+      }
     } else if (
       options?.targetIdBody &&
       request.body &&

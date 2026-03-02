@@ -6,5 +6,5 @@ export class ModerationActionDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
-  reason: string;
+  reason!: string;
 }

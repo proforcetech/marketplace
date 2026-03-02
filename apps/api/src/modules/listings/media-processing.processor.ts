@@ -136,7 +136,7 @@ async function extractVideoThumbnail(videoBuffer: Buffer): Promise<Buffer> {
         folder: path.dirname(thumbPath),
         size: '640x?',
       })
-      .on('end', resolve)
+      .on('end', () => resolve())
       .on('error', reject);
   });
 

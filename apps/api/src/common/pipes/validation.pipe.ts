@@ -196,7 +196,7 @@ export class AppValidationPipe extends NestValidationPipe {
     });
   }
 
-  async transform(value: unknown, metadata: ArgumentMetadata): Promise<unknown> {
+  override async transform(value: unknown, metadata: ArgumentMetadata): Promise<unknown> {
     try {
       return await super.transform(value, metadata);
     } catch (error) {

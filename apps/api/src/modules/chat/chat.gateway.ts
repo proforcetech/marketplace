@@ -13,6 +13,7 @@ import { Server, Socket } from 'socket.io';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatService } from './chat.service';
+import { MessageTypeDto } from './dto/send-message.dto';
 import type { JwtPayload } from '../../common/guards/auth.guard';
 
 interface AuthenticatedSocket extends Socket {
@@ -25,7 +26,7 @@ interface AuthenticatedSocket extends Socket {
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ALLOWED_ORIGINS?.split(',') ?? [
+    origin: process.env['CORS_ALLOWED_ORIGINS']?.split(',') ?? [
       'http://localhost:3000',
       'http://localhost:3001',
     ],
@@ -35,7 +36,7 @@ interface AuthenticatedSocket extends Socket {
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(ChatGateway.name);
 
@@ -51,8 +52,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: AuthenticatedSocket): Promise<void> {
     try {
       const token =
-        client.handshake.auth?.token ||
-        client.handshake.query?.token;
+        client.handshake.auth?.['token'] ||
+        client.handshake.query?.['token'];
 
       if (!token || typeof token !== 'string') {
         this.logger.warn('WebSocket connection rejected: no token provided');
@@ -60,7 +61,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      const publicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
+      const publicKey = process.env['JWT_PUBLIC_KEY']?.replace(/\\n/g, '\n');
       if (!publicKey) {
         this.logger.error('JWT_PUBLIC_KEY not configured for WebSocket auth');
         client.disconnect();
@@ -118,7 +119,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data.conversationId,
         {
           content: data.content,
-          messageType: (data.messageType as 'text' | 'offer') ?? 'text',
+          messageType: (data.messageType as MessageTypeDto) ?? MessageTypeDto.TEXT,
         },
       );
 

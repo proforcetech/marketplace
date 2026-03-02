@@ -335,7 +335,7 @@ export class AuthService {
     });
 
     // In production, send via Twilio. For development, log the code.
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       this.logger.debug(`OTP for ${dto.phone}: ${code}`);
     }
 
@@ -477,7 +477,7 @@ export class AuthService {
     });
 
     // In production, send email with reset link
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       this.logger.debug(`Password reset token for ${normalizedEmail}: ${resetToken}`);
     }
 

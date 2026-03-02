@@ -242,7 +242,7 @@ export class SanitizeInterceptor implements NestInterceptor {
         if (typeof value === 'string') {
           sanitizedParams[key] = sanitizeString(value);
         } else {
-          sanitizedParams[key] = value;
+          sanitizedParams[key] = String(value);
         }
       }
       request.params = sanitizedParams;

@@ -11,7 +11,7 @@ export class SendMessageDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)
-  content: string;
+  content!: string;
 
   @ApiPropertyOptional({ enum: MessageTypeDto, default: MessageTypeDto.TEXT })
   @IsOptional()

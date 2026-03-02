@@ -11,7 +11,7 @@ export class PrismaService
   constructor() {
     super({
       log:
-        process.env.NODE_ENV === 'development'
+        process.env['NODE_ENV'] === 'development'
           ? [
               { emit: 'event', level: 'query' },
               { emit: 'stdout', level: 'info' },

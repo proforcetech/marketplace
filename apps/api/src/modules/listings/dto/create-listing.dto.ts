@@ -16,7 +16,7 @@ import {
   ItemCondition,
   ListingVisibility,
   LocationPrecision,
-} from '@marketplace/shared/types';
+} from '@marketplace/shared';
 
 export class LocationDto {
   @IsNumber()

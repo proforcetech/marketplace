@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
+import { ReportStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AdminUserQueryDto, AdminReportQueryDto, AuditLogQueryDto } from './dto/admin-query.dto';
 
@@ -16,11 +17,11 @@ export class AdminService {
   async getDashboardStats(): Promise<Record<string, number>> {
     const [totalUsers, totalListings, pendingReview, openReports, activePromos] =
       await this.prisma.$transaction([
-        this.prisma.user.count({ where: { isActive: true } }),
+        this.prisma.user.count({ where: { status: 'active' } }),
         this.prisma.listing.count({ where: { status: 'active' } }),
         this.prisma.listing.count({ where: { status: 'pending_review' } }),
         this.prisma.report.count({ where: { status: 'pending' } }),
-        this.prisma.promotion.count({ where: { status: 'active' } }),
+        this.prisma.promotionPurchase.count({ where: { status: 'active' } }),
       ]);
 
     return { totalUsers, totalListings, pendingReview, openReports, activePromos };
@@ -58,7 +59,7 @@ export class AdminService {
     await this.prisma.$transaction([
       this.prisma.listing.update({ where: { id: listingId }, data: { status: 'active', publishedAt: new Date() } }),
       this.prisma.auditLog.create({
-        data: { actorId: adminId, action: 'listing_approved', targetType: 'listing', targetId: listingId },
+        data: { actorId: adminId, actorType: 'admin', action: 'listing_approved', targetType: 'listing', targetId: listingId },
       }),
       this.prisma.notification.create({
         data: {
@@ -91,6 +92,7 @@ export class AdminService {
       this.prisma.auditLog.create({
         data: {
           actorId: adminId,
+          actorType: 'admin',
           action: 'listing_rejected',
           targetType: 'listing',
           targetId: listingId,
@@ -125,10 +127,11 @@ export class AdminService {
       this.prisma.auditLog.create({
         data: {
           actorId: adminId,
+          actorType: 'admin',
           action: 'listing_removed',
           targetType: 'listing',
           targetId: listingId,
-          metadata: { reason },
+          details: { reason },
         },
       }),
     ]);
@@ -161,9 +164,6 @@ export class AdminService {
           avatarUrl: true,
           role: true,
           status: true,
-          isActive: true,
-          isBanned: true,
-          shadowBanned: true,
           phoneVerified: true,
           identityVerified: true,
           ratingAvg: true,
@@ -182,7 +182,7 @@ export class AdminService {
       select: {
         id: true, email: true, displayName: true, avatarUrl: true, phone: true,
         phoneVerified: true, identityVerified: true, role: true, status: true,
-        isActive: true, isBanned: true, shadowBanned: true, ratingAvg: true,
+        ratingAvg: true,
         ratingCount: true, responseRate: true, createdAt: true, lastActiveAt: true,
       },
     });
@@ -195,7 +195,7 @@ export class AdminService {
         where: { targetId: userId },
         orderBy: { createdAt: 'desc' },
         take: 10,
-        select: { action: true, actorId: true, metadata: true, createdAt: true },
+        select: { action: true, actorId: true, details: true, createdAt: true },
       }),
     ]);
 
@@ -206,23 +206,23 @@ export class AdminService {
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
-        data: { isBanned: true, isActive: false },
+        data: { status: 'banned' },
       }),
       this.prisma.listing.updateMany({
         where: { userId, status: { in: ['active', 'pending_review'] } },
         data: { status: 'removed' },
       }),
       this.prisma.auditLog.create({
-        data: { actorId: adminId, action: 'user_banned', targetType: 'user', targetId: userId, metadata: { reason } },
+        data: { actorId: adminId, actorType: 'admin', action: 'user_banned', targetType: 'user', targetId: userId, details: { reason } },
       }),
     ]);
   }
 
   async shadowBanUser(userId: string, adminId: string, reason: string): Promise<void> {
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: userId }, data: { shadowBanned: true } }),
+      this.prisma.user.update({ where: { id: userId }, data: { status: 'shadow_banned' } }),
       this.prisma.auditLog.create({
-        data: { actorId: adminId, action: 'user_shadow_banned', targetType: 'user', targetId: userId, metadata: { reason } },
+        data: { actorId: adminId, actorType: 'admin', action: 'user_shadow_banned', targetType: 'user', targetId: userId, details: { reason } },
       }),
     ]);
   }
@@ -231,10 +231,10 @@ export class AdminService {
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
-        data: { isBanned: false, shadowBanned: false, isActive: true },
+        data: { status: 'active' },
       }),
       this.prisma.auditLog.create({
-        data: { actorId: adminId, action: 'user_unsuspended', targetType: 'user', targetId: userId },
+        data: { actorId: adminId, actorType: 'admin', action: 'user_unsuspended', targetType: 'user', targetId: userId },
       }),
     ]);
   }
@@ -244,14 +244,15 @@ export class AdminService {
     until.setDate(until.getDate() + days);
 
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: userId }, data: { isActive: false } }),
+      this.prisma.user.update({ where: { id: userId }, data: { status: 'suspended' } }),
       this.prisma.auditLog.create({
         data: {
           actorId: adminId,
+          actorType: 'admin',
           action: 'user_suspended',
           targetType: 'user',
           targetId: userId,
-          metadata: { reason, days, until: until.toISOString() },
+          details: { reason, days, until: until.toISOString() },
         },
       }),
     ]);
@@ -294,20 +295,21 @@ export class AdminService {
     const updated = await this.prisma.report.update({
       where: { id: reportId },
       data: {
-        status,
+        status: status as ReportStatus,
         resolvedById: adminId,
         resolvedAt: new Date(),
-        ...(notes ? { details: notes } : {}),
+        ...(notes ? { resolutionNotes: notes } : {}),
       },
     });
 
     await this.prisma.auditLog.create({
       data: {
         actorId: adminId,
+        actorType: 'admin',
         action: `report_${status}`,
         targetType: 'report',
         targetId: reportId,
-        metadata: { notes },
+        details: { notes },
       },
     });
 

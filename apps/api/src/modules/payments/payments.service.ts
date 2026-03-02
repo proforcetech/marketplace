@@ -763,7 +763,7 @@ export class PaymentsService {
   }
 
   private async handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-    const purchaseId = session.metadata?.purchaseId;
+    const purchaseId = session.metadata?.['purchaseId'];
     if (!purchaseId) {
       this.logger.warn('Checkout session completed without purchaseId metadata');
       return;

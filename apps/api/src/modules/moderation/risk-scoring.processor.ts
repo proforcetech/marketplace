@@ -1,6 +1,7 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
+import { ModerationActionType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RiskScoringService } from './risk-scoring.service';
 
@@ -184,12 +185,18 @@ export class RiskScoringProcessor {
     recommendation: string,
   ): Promise<void> {
     try {
+      // Map internal action names to ModerationActionType enum values
+      const actionType: ModerationActionType = action === 'auto_reject'
+        ? ModerationActionType.reject
+        : ModerationActionType.approve;
+
       await this.prisma.moderationAction.create({
         data: {
-          listingId,
-          action,
+          adminId: 'system',
+          targetType: 'listing',
+          targetId: listingId,
+          action: actionType,
           reason: `Automated risk scoring: score=${score}, recommendation=${recommendation}`,
-          performedBy: 'system',
           createdAt: new Date(),
         },
       });

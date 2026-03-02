@@ -5,16 +5,16 @@ export class RegisterPushTokenDto {
   @ApiProperty({ example: 'ExponentPushToken[xxxxxx]' })
   @IsString()
   @IsNotEmpty()
-  token: string;
+  token!: string;
 
   @ApiProperty({ enum: ['ios', 'android', 'web'] })
   @IsEnum(['ios', 'android', 'web'])
-  platform: 'ios' | 'android' | 'web';
+  platform!: 'ios' | 'android' | 'web';
 }
 
 export class RemovePushTokenDto {
   @ApiProperty({ example: 'ExponentPushToken[xxxxxx]' })
   @IsString()
   @IsNotEmpty()
-  token: string;
+  token!: string;
 }

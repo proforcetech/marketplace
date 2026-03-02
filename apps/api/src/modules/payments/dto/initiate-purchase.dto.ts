@@ -5,5 +5,5 @@ export class InitiatePurchaseDto {
   @ApiProperty({ description: 'The listing ID to purchase' })
   @IsString()
   @IsNotEmpty()
-  listingId: string;
+  listingId!: string;
 }

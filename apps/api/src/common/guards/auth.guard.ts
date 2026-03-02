@@ -105,7 +105,7 @@ export class AuthGuard implements CanActivate {
   ) {
     // Load the RS256 public key from environment.
     // In production, this should come from a secrets manager or be rotated via JWKS endpoint.
-    const key = process.env.JWT_PUBLIC_KEY;
+    const key = process.env['JWT_PUBLIC_KEY'];
     if (!key) {
       this.logger.warn(
         'JWT_PUBLIC_KEY not set. Authentication will fail for all requests. ' +

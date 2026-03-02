@@ -148,12 +148,12 @@ function parseIntEnv(key: string, defaultValue: number): number {
 }
 
 function parseCorsOrigins(): string[] {
-  const envOrigins = process.env.CORS_ALLOWED_ORIGINS;
+  const envOrigins = process.env['CORS_ALLOWED_ORIGINS'];
   if (envOrigins) {
     return envOrigins.split(',').map((origin) => origin.trim());
   }
 
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env['NODE_ENV'] === 'production') {
     return [
       'https://marketplace.example.com',
       'https://admin.marketplace.example.com',

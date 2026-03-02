@@ -14,7 +14,7 @@ export class CreateSavedSearchDto {
 
   /** Arbitrary search params (lat, lng, radius, query, category, etc.) */
   @IsObject()
-  query: Record<string, unknown>;
+  query!: Record<string, unknown>;
 
   @IsOptional()
   @IsBoolean()

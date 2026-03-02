@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import { SubscriptionTier, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   SUBSCRIPTION_PLANS,
@@ -213,8 +214,8 @@ export class SubscriptionsService {
   private async handleSubscriptionUpsert(
     stripeSubscription: Stripe.Subscription,
   ): Promise<void> {
-    const userId = stripeSubscription.metadata?.userId;
-    const tier = stripeSubscription.metadata?.tier;
+    const userId = stripeSubscription.metadata?.['userId'];
+    const tier = stripeSubscription.metadata?.['tier'];
 
     if (!userId || !tier) {
       this.logger.warn(
@@ -229,6 +230,7 @@ export class SubscriptionsService {
       return;
     }
 
+    const subscriptionTier = tier as SubscriptionTier;
     const status = this.mapStripeStatus(stripeSubscription.status);
 
     // Upsert the SellerSubscription record
@@ -238,7 +240,7 @@ export class SubscriptionsService {
       },
       create: {
         userId,
-        tier,
+        tier: subscriptionTier,
         status,
         stripeSubscriptionId: stripeSubscription.id,
         stripeCustomerId:
@@ -256,7 +258,7 @@ export class SubscriptionsService {
         monthlyPromoBudgetCents: plan.monthlyPromoBudgetCents,
       },
       update: {
-        tier,
+        tier: subscriptionTier,
         status,
         currentPeriodStart: new Date(
           stripeSubscription.current_period_start * 1000,
@@ -362,24 +364,21 @@ export class SubscriptionsService {
   /**
    * Map Stripe subscription status to our internal status string.
    */
-  private mapStripeStatus(stripeStatus: Stripe.Subscription.Status): string {
+  private mapStripeStatus(stripeStatus: Stripe.Subscription.Status): SubscriptionStatus {
     switch (stripeStatus) {
       case 'active':
-        return 'active';
+        return SubscriptionStatus.active;
       case 'trialing':
-        return 'trialing';
+        return SubscriptionStatus.trialing;
       case 'past_due':
-        return 'past_due';
+        return SubscriptionStatus.past_due;
       case 'canceled':
       case 'unpaid':
-        return 'cancelled';
       case 'incomplete':
       case 'incomplete_expired':
-        return 'incomplete';
       case 'paused':
-        return 'paused';
       default:
-        return 'unknown';
+        return SubscriptionStatus.cancelled;
     }
   }
 }

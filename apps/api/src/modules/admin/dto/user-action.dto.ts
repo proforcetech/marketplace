@@ -7,7 +7,7 @@ export class UserActionDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
-  reason: string;
+  reason!: string;
 
   @ApiPropertyOptional({ description: 'Number of days (for suspension)', minimum: 1, maximum: 365 })
   @IsOptional()

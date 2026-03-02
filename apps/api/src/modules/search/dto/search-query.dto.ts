@@ -9,8 +9,8 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { ItemCondition } from '@marketplace/shared/types';
-import type { SearchSortBy } from '@marketplace/shared/types';
+import { ItemCondition } from '@marketplace/shared';
+import type { SearchSortBy } from '@marketplace/shared';
 
 export class SearchQueryDto {
   @IsNumber()

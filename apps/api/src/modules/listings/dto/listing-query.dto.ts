@@ -1,5 +1,5 @@
 import { IsOptional, IsEnum, IsString } from 'class-validator';
-import { ListingStatus } from '@marketplace/shared/types';
+import { ListingStatus } from '@marketplace/shared';
 import { PaginationDto } from '../../../common/pipes/validation.pipe';
 
 export class ListingQueryDto extends PaginationDto {

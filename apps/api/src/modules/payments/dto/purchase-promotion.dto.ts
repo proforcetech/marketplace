@@ -11,9 +11,9 @@ export class PurchasePromotionDto {
   @ApiProperty({ description: 'ID of the listing to promote' })
   @IsString()
   @IsNotEmpty()
-  listingId: string;
+  listingId!: string;
 
   @ApiProperty({ enum: PlanType, description: 'Promotion plan type' })
   @IsEnum(PlanType)
-  planType: PlanType;
+  planType!: PlanType;
 }

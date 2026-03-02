@@ -210,9 +210,11 @@ export class SearchService {
     let nextCursor: string | null = null;
     if (hasMore && results.length > 0) {
       const lastRow = results[results.length - 1];
-      nextCursor = Buffer.from(
-        JSON.stringify({ id: lastRow.id }),
-      ).toString('base64url');
+      if (lastRow) {
+        nextCursor = Buffer.from(
+          JSON.stringify({ id: lastRow.id }),
+        ).toString('base64url');
+      }
     }
 
     // Fetch promoted listings separately (clearly marked as sponsored)

@@ -9,8 +9,8 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
-import { ListingStatus } from '@marketplace/shared/types';
-import type { PresignedUploadResponse } from '@marketplace/shared/types';
+import { ListingStatus } from '@marketplace/shared';
+import type { PresignedUploadResponse } from '@marketplace/shared';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { ListingQueryDto } from './dto/listing-query.dto';

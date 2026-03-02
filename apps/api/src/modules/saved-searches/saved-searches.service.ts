@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSavedSearchDto } from './dto/create-saved-search.dto';
 
@@ -37,7 +38,7 @@ export class SavedSearchesService {
       data: {
         userId,
         name: dto.name ?? null,
-        query: dto.query,
+        query: dto.query as Prisma.InputJsonValue,
         notify: dto.notify ?? true,
       },
     });

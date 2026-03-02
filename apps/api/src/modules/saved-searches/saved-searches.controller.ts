@@ -11,14 +11,14 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '../../common/guards/auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SavedSearchesService } from './saved-searches.service';
 import { CreateSavedSearchDto } from './dto/create-saved-search.dto';
 
 @ApiTags('saved-searches')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard)
 @Controller('saved-searches')
 export class SavedSearchesController {
   constructor(private readonly savedSearchesService: SavedSearchesService) {}
@@ -26,7 +26,7 @@ export class SavedSearchesController {
   @Post()
   @ApiOperation({ summary: 'Save a search query' })
   async create(
-    @CurrentUser('id') userId: string,
+    @CurrentUser('userId') userId: string,
     @Body() dto: CreateSavedSearchDto,
   ): Promise<Record<string, unknown>> {
     return this.savedSearchesService.create(userId, dto);
@@ -35,7 +35,7 @@ export class SavedSearchesController {
   @Get()
   @ApiOperation({ summary: 'List my saved searches' })
   async findAll(
-    @CurrentUser('id') userId: string,
+    @CurrentUser('userId') userId: string,
   ): Promise<Record<string, unknown>[]> {
     return this.savedSearchesService.findAllForUser(userId);
   }
@@ -45,7 +45,7 @@ export class SavedSearchesController {
   @ApiOperation({ summary: 'Delete a saved search' })
   async remove(
     @Param('id') id: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser('userId') userId: string,
   ): Promise<void> {
     return this.savedSearchesService.delete(id, userId);
   }
@@ -54,7 +54,7 @@ export class SavedSearchesController {
   @ApiOperation({ summary: 'Toggle email notifications for a saved search' })
   async toggleNotify(
     @Param('id') id: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser('userId') userId: string,
     @Body('notify') notify: boolean,
   ): Promise<Record<string, unknown>> {
     return this.savedSearchesService.toggleNotify(id, userId, notify);

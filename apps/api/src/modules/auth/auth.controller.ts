@@ -52,7 +52,7 @@ export class AuthController {
   private readonly isProduction: boolean;
 
   constructor(private readonly authService: AuthService) {
-    this.isProduction = process.env.NODE_ENV === 'production';
+    this.isProduction = process.env['NODE_ENV'] === 'production';
   }
 
   @Public()
@@ -66,7 +66,7 @@ export class AuthController {
     @Body() dto: SignupDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ data: ReturnType<typeof this.formatAuthResponse> }> {
+  ): Promise<{ data: { user: unknown; accessToken: string } }> {
     const ipAddress = this.getClientIp(req);
     const deviceInfo = req.headers['user-agent'];
 
@@ -99,7 +99,7 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ data: ReturnType<typeof this.formatAuthResponse> }> {
+  ): Promise<{ data: { user: unknown; accessToken: string } }> {
     const ipAddress = this.getClientIp(req);
     const deviceInfo = req.headers['user-agent'];
 

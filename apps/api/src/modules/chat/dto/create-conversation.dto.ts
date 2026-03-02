@@ -5,7 +5,7 @@ export class CreateConversationDto {
   @ApiProperty({ description: 'ID of the listing to start a conversation about' })
   @IsString()
   @IsNotEmpty()
-  listingId: string;
+  listingId!: string;
 
   @ApiPropertyOptional({ description: 'Initial message to send', maxLength: 2000 })
   @IsOptional()

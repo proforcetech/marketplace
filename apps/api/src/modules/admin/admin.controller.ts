@@ -17,7 +17,7 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { Roles } from '../../common/guards/roles.guard';
+import { Roles, Role } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../../common/guards/auth.guard';
 import { AdminService } from './admin.service';
@@ -29,7 +29,7 @@ import { AdminUserQueryDto, AdminReportQueryDto, AuditLogQueryDto } from './dto/
 @ApiTags('Admin')
 @Controller('admin')
 @ApiBearerAuth()
-@Roles('admin', 'super_admin')
+@Roles(Role.ADMIN, Role.SUPER_ADMIN)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 

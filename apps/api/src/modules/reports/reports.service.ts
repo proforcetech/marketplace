@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CreateReportDto } from './dto/create-report.dto';
 import { PaginationDto } from '../../common/pipes/validation.pipe';
@@ -71,7 +72,7 @@ export class ReportsService {
         targetId: dto.targetId,
         reason: dto.reason,
         details: dto.description ?? null,
-        evidence,
+        evidence: evidence as Prisma.InputJsonValue,
         status: 'pending',
         priority,
       },
