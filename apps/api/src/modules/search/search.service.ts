@@ -1,7 +1,6 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { SearchQueryDto, SuggestionsQueryDto } from './dto';
-
-export const PRISMA_SERVICE = 'PRISMA_SERVICE';
 
 interface SearchResultRow {
   id: string;
@@ -43,13 +42,7 @@ interface SuggestionRow {
 export class SearchService {
   private readonly logger = new Logger(SearchService.name);
 
-  constructor(
-    @Inject(PRISMA_SERVICE)
-    private readonly prisma: {
-      $queryRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown[]>;
-      $queryRawUnsafe: (query: string, ...values: unknown[]) => Promise<unknown[]>;
-    },
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Main search endpoint: PostGIS radius + full-text + filters + sort + cursor pagination.
