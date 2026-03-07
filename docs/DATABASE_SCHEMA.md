@@ -15,7 +15,7 @@ The database uses **PostgreSQL 16** with the **PostGIS** extension for geospatia
   - [user_verifications](#user_verifications)
   - [listings](#listings)
   - [listing_media](#listing_media)
-  - [listing_fields](#listing_fields)
+  - [listing_field_values](#listing_field_values)
   - [categories](#categories)
   - [category_fields](#category_fields)
   - [conversations](#conversations)
@@ -52,7 +52,7 @@ listings
   |-- N:1 --> users (seller)
   |-- N:1 --> categories
   |-- 1:N --> listing_media
-  |-- 1:N --> listing_fields
+  |-- 1:N --> listing_field_values
   |-- 1:N --> conversations
   |-- 1:N --> ratings (context)
   |-- 1:1 --> promotions (active promotion)
@@ -188,55 +188,61 @@ Images and videos attached to listings.
 | `hash` | `varchar(64)` | Yes | `null` | Perceptual hash for duplicate/abuse detection |
 | `created_at` | `timestamptz` | No | `now()` | Upload time |
 
-### listing_fields
+### listing_field_values
 
-Dynamic category-specific field values stored as key-value pairs (EAV pattern).
+Dynamic category-specific field values stored as key-value pairs (EAV pattern). The Prisma model name is `ListingFieldValue`.
 
 | Column | Type | Nullable | Default | Description |
 |---|---|---|---|---|
 | `id` | `text` (CUID) | No | `cuid()` | Primary key |
 | `listing_id` | `text` | No | -- | FK to `listings.id` |
-| `field_id` | `text` | No | -- | FK to `category_fields.id` |
+| `category_field_id` | `text` | No | -- | FK to `category_fields.id` |
 | `value` | `text` | No | -- | Field value (stored as text, validated by field type) |
 | `created_at` | `timestamptz` | No | `now()` | Created time |
 
-Unique constraint: `(listing_id, field_id)`
+Unique constraint: `(listing_id, category_field_id)`
 
 ### categories
 
-Hierarchical category taxonomy.
+Hierarchical category taxonomy. Uses a self-referencing `parent_id` for the section > category > subcategory hierarchy.
+
+For the full category matrix, navigation sections, alternate-nav behavior, and search parameter definitions, see [CATEGORIES.md](./CATEGORIES.md).
 
 | Column | Type | Nullable | Default | Description |
 |---|---|---|---|---|
 | `id` | `text` (CUID) | No | `cuid()` | Primary key |
-| `parent_id` | `text` | Yes | `null` | FK to `categories.id` (null = top-level) |
+| `parent_id` | `text` | Yes | `null` | FK to `categories.id` (null = top-level section) |
 | `name` | `varchar(100)` | No | -- | Display name |
 | `slug` | `varchar(100)` | No | -- | URL-friendly slug (unique) |
 | `description` | `text` | Yes | `null` | Category description |
 | `icon` | `varchar(50)` | Yes | `null` | Icon identifier |
-| `position` | `integer` | No | `0` | Display order |
+| `position` | `integer` | No | `0` | Display order within parent |
 | `is_active` | `boolean` | No | `true` | Whether the category is enabled |
 | `created_at` | `timestamptz` | No | `now()` | Created time |
 
-Top-level categories: Automotive, Housing, Real Estate, Jobs/Services, For Sale, Community
+Top-level sections (10): Marketplace, Vehicles, Vehicle Parts, Home, Business / Commercial / Industrial, Alternative Fuel & Energy, Housing, Services, Jobs, Gigs.
+
+Three categories (Trailers, Marine / Boats, Powersports) appear in both the Marketplace and Vehicles navigation sections but are stored once, canonically under Vehicles. The alternate appearance is handled via frontend navigation constants, not duplicate rows. See [CATEGORIES.md -- Alternate Navigation](./CATEGORIES.md#alternate-navigation-pattern).
 
 ### category_fields
 
-Defines the structured fields available for each category.
+Defines the structured fields available for each category. These drive both listing creation forms and search filter UIs. Fields with `is_filterable = true` are exposed as search parameters.
 
 | Column | Type | Nullable | Default | Description |
 |---|---|---|---|---|
 | `id` | `text` (CUID) | No | `cuid()` | Primary key |
 | `category_id` | `text` | No | -- | FK to `categories.id` |
-| `name` | `varchar(100)` | No | -- | Field internal name (e.g., `vehicle_type`) |
-| `label` | `varchar(100)` | No | -- | Display label (e.g., "Vehicle Type") |
-| `type` | `varchar(20)` | No | -- | `text`, `number`, `select`, `multiselect`, `boolean` |
-| `options` | `jsonb` | Yes | `null` | Allowed values for select/multiselect fields |
+| `name` | `varchar(100)` | No | -- | Field internal name (e.g., `mileage`, `bolt_pattern`) |
+| `label` | `varchar(100)` | No | -- | Display label (e.g., "Mileage", "Bolt Pattern") |
+| `type` | `category_field_type` (enum) | No | -- | `text`, `number`, `select`, `multiselect`, `boolean` |
+| `options` | `jsonb` | Yes | `null` | Allowed values for select/multiselect fields (JSON array) |
 | `is_required` | `boolean` | No | `false` | Whether the field is required for listing creation |
 | `is_filterable` | `boolean` | No | `false` | Whether the field appears as a search filter |
-| `validation` | `jsonb` | Yes | `null` | Validation rules (min, max, pattern, etc.) |
+| `validation` | `jsonb` | Yes | `null` | Validation rules (e.g., `{ "min": 0, "max": 500000 }`) |
 | `position` | `integer` | No | `0` | Display order in forms |
 | `created_at` | `timestamptz` | No | `now()` | Created time |
+
+For the full list of search parameters per category scope (universal, vehicles, housing, etc.), see [CATEGORIES.md -- Search Parameters](./CATEGORIES.md#search-parameters).
 
 ### conversations
 
@@ -496,11 +502,11 @@ CREATE INDEX idx_listings_expires_at ON listings (expires_at) WHERE status = 'ac
 CREATE INDEX idx_listings_promoted ON listings (is_promoted) WHERE is_promoted = true AND status = 'active';
 ```
 
-### Listing fields index
+### Listing field values index
 
 ```sql
-CREATE INDEX idx_listing_fields_listing ON listing_fields (listing_id);
-CREATE INDEX idx_listing_fields_field_value ON listing_fields (field_id, value);
+CREATE INDEX idx_listing_field_values_listing ON listing_field_values (listing_id);
+CREATE INDEX idx_listing_field_values_field ON listing_field_values (category_field_id, value);
 ```
 
 ### Conversation and message indexes
