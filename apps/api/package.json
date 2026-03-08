@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/s3-request-presigner": "^3.1004.0",
     "@marketplace/shared": "workspace:^",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/bull": "^10.2.0",

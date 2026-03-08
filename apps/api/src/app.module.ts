@@ -25,6 +25,7 @@ import { OffersModule } from './modules/offers/offers.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { SavedSearchesModule } from './modules/saved-searches/saved-searches.module';
 import { ExchangeModule } from './modules/exchange/exchange.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -52,6 +53,9 @@ import { ExchangeModule } from './modules/exchange/exchange.module';
 
     // Database
     PrismaModule,
+
+    // Object storage (S3 / MinIO)
+    StorageModule,
 
     // Cross-cutting infrastructure (global providers)
     LoggerModule,
