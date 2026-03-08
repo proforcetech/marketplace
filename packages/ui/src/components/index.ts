@@ -7,7 +7,7 @@ export { Modal } from './Modal';
 export { Select } from './Select';
 export { Tag } from './Tag';
 export { Textarea } from './Textarea';
-export { Toast } from './Toast';
+export { ToastProvider, useToast } from './Toast';
 
 // Molecules
 export { FilterSidebar } from './FilterSidebar';
