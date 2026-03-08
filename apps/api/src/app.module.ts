@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 import { PrismaModule } from './prisma/prisma.module';
+import { CommonModule } from './common/common.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { EmailModule } from './modules/email/email.module';
 import { HealthModule } from './modules/health/health.module';
@@ -58,6 +59,7 @@ import { StorageModule } from './modules/storage/storage.module';
     StorageModule,
 
     // Cross-cutting infrastructure (global providers)
+    CommonModule,
     LoggerModule,
     EmailModule,
     HealthModule,
