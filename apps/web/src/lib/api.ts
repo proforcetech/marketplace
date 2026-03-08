@@ -755,5 +755,5 @@ export const transactions = {
   },
 };
 
-const api = { auth, users, listings, search, conversations, ratings, promotions, reports, admin, offers, savedSearches, subscriptions, identity, notifications, connect, transactions };
+export const api = { auth, users, listings, search, conversations, ratings, promotions, reports, admin, offers, savedSearches, subscriptions, identity, notifications, connect, transactions };
 export default api;
