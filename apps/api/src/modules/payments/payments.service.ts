@@ -94,7 +94,7 @@ export class PaymentsService {
     if (!stripeKey) {
       this.logger.warn('STRIPE_SECRET_KEY not set. Payment operations will fail.');
     }
-    this.stripe = new Stripe(stripeKey ?? '', {
+    this.stripe = new Stripe(stripeKey ?? 'sk_test_placeholder', {
       apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
     });
     this.webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET') ?? '';
