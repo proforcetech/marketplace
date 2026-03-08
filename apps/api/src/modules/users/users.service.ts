@@ -22,7 +22,7 @@ export class UsersService {
     private readonly configService: ConfigService,
   ) {
     const stripeKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    this.stripe = new Stripe(stripeKey ?? '', {
+    this.stripe = new Stripe(stripeKey ?? 'sk_test_placeholder', {
       apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
     });
   }

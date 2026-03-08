@@ -29,7 +29,7 @@ export class SubscriptionsService {
     if (!stripeKey) {
       this.logger.warn('STRIPE_SECRET_KEY not set. Subscription operations will fail.');
     }
-    this.stripe = new Stripe(stripeKey ?? '', {
+    this.stripe = new Stripe(stripeKey ?? 'sk_test_placeholder', {
       apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
     });
     this.webhookSecret =
