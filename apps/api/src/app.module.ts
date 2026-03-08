@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { AuthGuard } from './common/guards/auth.guard';
 
 import { PrismaModule } from './prisma/prisma.module';
 import { CommonModule } from './common/common.module';
@@ -82,6 +83,8 @@ import { StorageModule } from './modules/storage/storage.module';
     ExchangeModule,
   ],
   providers: [
+    // Global JWT auth guard — use @Public() to opt out on specific endpoints
+    { provide: APP_GUARD, useClass: AuthGuard },
     // Global rate limiting guard
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
