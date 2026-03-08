@@ -616,7 +616,6 @@ export class AuthService {
         jti,
       },
       {
-        privateKey: this.jwtPrivateKey,
         algorithm: 'RS256',
         expiresIn: this.tokenConfig.accessTokenExpirySeconds,
       },
@@ -631,7 +630,6 @@ export class AuthService {
         type: 'refresh',
       },
       {
-        privateKey: this.jwtPrivateKey,
         algorithm: 'RS256',
         expiresIn: this.tokenConfig.refreshTokenExpirySeconds,
       },

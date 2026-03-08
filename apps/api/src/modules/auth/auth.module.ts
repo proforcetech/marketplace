@@ -13,8 +13,9 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '15m' },
+        privateKey: configService.get<string>('JWT_PRIVATE_KEY')?.replace(/\\n/g, '\n'),
+        publicKey: configService.get<string>('JWT_PUBLIC_KEY')?.replace(/\\n/g, '\n'),
+        signOptions: { algorithm: 'RS256', expiresIn: '15m' },
       }),
       inject: [ConfigService],
     }),
