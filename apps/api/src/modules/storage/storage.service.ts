@@ -43,7 +43,8 @@ export class StorageService implements IStorageService {
       ContentLength: maxSizeBytes,
     });
 
-    const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const uploadUrl = await getSignedUrl(this.s3 as any, command as any, { expiresIn: 300 });
 
     return { uploadUrl, fileKey: key };
   }

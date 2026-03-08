@@ -14,11 +14,12 @@
     "sourceMap": true,
     "incremental": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@prisma/client": ["./src/generated/prisma"],
+      "@prisma/client/*": ["./src/generated/prisma/*"]
     },
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "preserveSymlinks": true
+    "noUnusedParameters": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
