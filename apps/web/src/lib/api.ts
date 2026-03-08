@@ -392,62 +392,186 @@ export const reports = {
 };
 
 // ----------------------------------------------------------------
+// Admin types
+// ----------------------------------------------------------------
+
+export interface ModerationQueueItem {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  riskScore: number;
+  createdAt: string;
+  user: { id: string; displayName: string; email: string; ratingAvg: number | null };
+  media: Array<{ url: string; thumbnailUrl: string | null; position: number }>;
+  category: { name: string; slug: string };
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: string;
+  status: string;
+  phoneVerified: boolean;
+  identityVerified: boolean;
+  ratingAvg: number | null;
+  ratingCount: number;
+  createdAt: string;
+  lastActiveAt: string | null;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  phone: string | null;
+  responseRate: number | null;
+  listingCount: number;
+  reportCount: number;
+  recentActions: Array<{
+    action: string;
+    actorId: string;
+    details: Record<string, unknown> | null;
+    createdAt: string;
+  }>;
+}
+
+export interface AdminReport {
+  id: string;
+  targetType: string;
+  targetId: string;
+  reason: string;
+  details: string | null;
+  status: string;
+  priority: string;
+  resolvedAt: string | null;
+  resolutionNotes: string | null;
+  createdAt: string;
+  reporter: { id: string; displayName: string; email: string };
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorId: string;
+  actorType: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  details: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+// ----------------------------------------------------------------
 // Admin
 // ----------------------------------------------------------------
 
 export const admin = {
-  getStats(opts?: RequestOptions): Promise<ApiResponse<{
-    totalUsers: number;
-    activeListings: number;
-    pendingModeration: number;
-    openReports: number;
-    newListingsToday: number;
-    newUsersToday: number;
-  }>> {
-    return request('GET', '/admin/stats', undefined, opts);
+  getDashboard(opts?: RequestOptions): Promise<{
+    data: {
+      totalUsers: number;
+      totalListings: number;
+      pendingReview: number;
+      openReports: number;
+      activePromos: number;
+    };
+  }> {
+    return request('GET', '/admin/dashboard', undefined, opts);
   },
+
   getModerationQueue(
-    params?: { cursor?: string; limit?: number },
+    params?: { page?: number; limit?: number },
     opts?: RequestOptions,
-  ): Promise<ApiResponse<Array<{
-    id: string;
-    title: string;
-    thumbnailUrl: string | null;
-    riskScore: number;
-    createdAt: string;
-    userId: string;
-    userDisplayName: string;
-  }>>> {
+  ): Promise<{
+    data: ModerationQueueItem[];
+    pagination: { total: number; page: number; limit: number };
+  }> {
     const qs = buildQueryString(params ?? {});
-    return request('GET', `/admin/moderation-queue${qs}`, undefined, opts);
+    return request('GET', `/admin/moderation/queue${qs}`, undefined, opts);
   },
-  moderateListing(
-    id: string,
-    payload: { action: string; reason?: string; notifyUser?: boolean },
+
+  getModerationDetail(listingId: string, opts?: RequestOptions): Promise<{ data: Record<string, unknown> }> {
+    return request('GET', `/admin/moderation/${encodeURIComponent(listingId)}`, undefined, opts);
+  },
+
+  approveListing(listingId: string, opts?: RequestOptions): Promise<{ data: { message: string } }> {
+    return request('POST', `/admin/moderation/${encodeURIComponent(listingId)}/approve`, undefined, opts);
+  },
+
+  rejectListing(listingId: string, reason: string, opts?: RequestOptions): Promise<{ data: { message: string } }> {
+    return request('POST', `/admin/moderation/${encodeURIComponent(listingId)}/reject`, { reason }, opts);
+  },
+
+  removeListing(listingId: string, reason: string, opts?: RequestOptions): Promise<{ data: { message: string } }> {
+    return request('POST', `/admin/moderation/${encodeURIComponent(listingId)}/remove`, { reason }, opts);
+  },
+
+  searchUsers(
+    params?: { search?: string; page?: number; limit?: number },
     opts?: RequestOptions,
-  ): Promise<ApiResponse<Listing>> {
-    return request('PATCH', `/admin/listings/${encodeURIComponent(id)}/moderate`, payload, opts);
+  ): Promise<{
+    data: AdminUser[];
+    pagination: { total: number; page: number; limit: number };
+  }> {
+    const qs = buildQueryString(params ?? {});
+    return request('GET', `/admin/users${qs}`, undefined, opts);
   },
+
+  getUserDetail(userId: string, opts?: RequestOptions): Promise<{ data: AdminUserDetail }> {
+    return request('GET', `/admin/users/${encodeURIComponent(userId)}`, undefined, opts);
+  },
+
+  banUser(userId: string, reason: string, opts?: RequestOptions): Promise<{ data: { message: string } }> {
+    return request('POST', `/admin/users/${encodeURIComponent(userId)}/ban`, { reason }, opts);
+  },
+
+  shadowBanUser(userId: string, reason: string, opts?: RequestOptions): Promise<{ data: { message: string } }> {
+    return request('POST', `/admin/users/${encodeURIComponent(userId)}/shadow-ban`, { reason }, opts);
+  },
+
+  suspendUser(userId: string, reason: string, days: number, opts?: RequestOptions): Promise<{ data: { message: string } }> {
+    return request('POST', `/admin/users/${encodeURIComponent(userId)}/suspend`, { reason, days }, opts);
+  },
+
+  unsuspendUser(userId: string, opts?: RequestOptions): Promise<{ data: { message: string } }> {
+    return request('POST', `/admin/users/${encodeURIComponent(userId)}/unsuspend`, undefined, opts);
+  },
+
   getReports(
-    params?: { status?: string; cursor?: string; limit?: number },
+    params?: { status?: string; targetType?: string; page?: number; limit?: number },
     opts?: RequestOptions,
-  ): Promise<ApiResponse<Report[]>> {
+  ): Promise<{
+    data: AdminReport[];
+    pagination: { total: number; page: number; limit: number };
+  }> {
     const qs = buildQueryString(params ?? {});
     return request('GET', `/admin/reports${qs}`, undefined, opts);
   },
+
   resolveReport(
     id: string,
-    payload: { status: string; resolution: string },
+    status: string,
+    notes?: string,
     opts?: RequestOptions,
-  ): Promise<ApiResponse<Report>> {
-    return request('PATCH', `/admin/reports/${encodeURIComponent(id)}`, payload, opts);
+  ): Promise<{ data: AdminReport }> {
+    return request('PATCH', `/admin/reports/${encodeURIComponent(id)}`, { status, notes }, opts);
   },
-  searchUsers(
-    params: { q?: string; cursor?: string; limit?: number },
+
+  getAuditLog(
+    params?: {
+      actorId?: string;
+      targetType?: string;
+      action?: string;
+      startDate?: string;
+      endDate?: string;
+      page?: number;
+      limit?: number;
+    },
     opts?: RequestOptions,
-  ): Promise<ApiResponse<User[]>> {
-    const qs = buildQueryString(params);
-    return request('GET', `/admin/users${qs}`, undefined, opts);
+  ): Promise<{
+    data: AuditLogEntry[];
+    pagination: { total: number; page: number; limit: number };
+  }> {
+    const qs = buildQueryString(params ?? {});
+    return request('GET', `/admin/audit-log${qs}`, undefined, opts);
   },
 };
 
