@@ -5,11 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
-import { api } from '@/lib/api';
 
 export default function SignupPage(): JSX.Element {
   const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const signup = useAuthStore((s) => s.signup);
   const [form, setForm] = useState({ displayName: '', email: '', phone: '', password: '', confirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -26,13 +25,7 @@ export default function SignupPage(): JSX.Element {
     if (!agreed) { setError('Please agree to the terms'); return; }
     setIsLoading(true);
     try {
-      const result = await api.auth.signup({
-        displayName: form.displayName,
-        email: form.email,
-        phone: form.phone,
-        password: form.password,
-      });
-      setAuth(result.user, result.accessToken, result.refreshToken);
+      await signup(form.email, form.password, form.displayName);
       router.push('/');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not create account');

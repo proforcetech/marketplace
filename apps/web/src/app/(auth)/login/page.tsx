@@ -5,11 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
-import { api } from '@/lib/api';
 
 export default function LoginPage(): JSX.Element {
   const router = useRouter();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const login = useAuthStore((s) => s.login);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,8 +20,7 @@ export default function LoginPage(): JSX.Element {
     setError(null);
     setIsLoading(true);
     try {
-      const result = await api.auth.login({ email, password });
-      setAuth(result.user, result.accessToken, result.refreshToken);
+      await login(email, password);
       router.push('/');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid email or password');
