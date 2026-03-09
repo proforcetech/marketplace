@@ -6,7 +6,7 @@ import {
   ItemCondition,
   CategoryFieldType,
   Prisma,
-} from '@prisma/client';
+} from '../src/generated/prisma';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
